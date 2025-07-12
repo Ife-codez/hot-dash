@@ -7,6 +7,13 @@ export default defineNuxtConfig({
   mongoose: {
     uri: process.env.MONGO_URI,
   },
+  runtimeConfig: {
+    smtpUser: process.env.SMTP_USER,
+    smtpPass: process.env.SMTP_PASS,
+    public: {
+      appUrl: process.env.APP_URL
+    }
+  }
   // tailwindcss:{
   //   configPath: "~/tailwind.config.ts",
   // }
