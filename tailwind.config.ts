@@ -21,8 +21,8 @@ export default {
     //   xl: '1rem',
     //   '2xl': '1.5rem'
     // },
-      boxShadow: {
-        soft: '0 6px 12px rgba(0, 0, 0, 0.15)'
-      }
+      // boxShadow: {
+      //   soft: '0 6px 12px rgba(0, 0, 0, 0.15)'
+      // }
   }
 }

@@ -51,9 +51,7 @@ const handleLogin = async () => {
       body: { ...loginData.value }
     })
 
-    // ✅ Store user in Pinia (optional, covered later)
-    // e.g., useUserStore().setUser(res.user)
-
+    
     toast.success(res.message || 'Logged in successfully!')
 
     // redirect based on role

@@ -1,10 +1,15 @@
 import { defineMongooseModel } from '#nuxt/mongoose'
-export const menuItem =  defineMongooseModel('MenuItem', {
-  name: {type: String, required: true},
+import mongoose from 'mongoose'
+export default defineMongooseModel('MenuItem', {
+  name: { type: String, required: true },
   description: String,
-  price: { type: Number, required: true},
-  category: String,
+  price: { type: Number, required: true },
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: true
+  },
   imageUrl: String,
-  available: {type: Boolean, default: true},
-  createdAt: {type: Date, default: Date.now}
+  available: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
 })
