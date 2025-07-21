@@ -15,7 +15,7 @@
         @click="selectCategory(cat._id)"
         class="cursor-pointer text-sm font-medium"
         :class="{
-          'text-orange-600 font-semibold': activeCategory === cat._id,
+          'text-orange-500 font-semibold': activeCategory === cat._id,
         }"
       >
         {{ cat.name }}
@@ -30,7 +30,7 @@
 >
   <!-- Food Image -->
   <img
-    :src="item.image"
+    :src="item.imageUrl"
     alt="Food image"
     class="w-full h-32 object-cover rounded mb-2"
   />
@@ -52,7 +52,7 @@
     
     <!-- Add to cart button -->
     <button
-      class="w-8 h-8 rounded-tr-lg rounded-bl-lg bg-orange-600 text-white flex items-center justify-center"
+      class="w-8 h-8 rounded-tr-lg rounded-bl-lg bg-orange-500 text-white flex items-center justify-center"
       @click="addToCart(item)"
     >
       +
@@ -71,7 +71,6 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
 import { useCategoryStore } from '@/stores/category'
 import { useMenuStore } from '@/stores/menu'
 

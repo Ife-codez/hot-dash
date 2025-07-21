@@ -31,8 +31,21 @@
           <div class="flex justify-end space-x-2">
             <button type="button" @click="closeModal" class="px-4 py-2 border rounded">Cancel</button>
             <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded">Update</button>
+            <button type="button" @click="showConfirmDelete = true" class="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div v-if="showConfirmDelete" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg w-11/12 max-w-md text-center">
+        <h3 class="text-lg font-bold mb-4">Confirm Delete</h3>
+        <p>Are you sure you want to delete <strong>{{ editedCategory.name }}</strong>?</p>
+        <div class="flex justify-center mt-4 space-x-4">
+          <button @click="showConfirmDelete = false" class="px-4 py-2 border rounded">Cancel</button>
+          <button @click="deleteCategory" class="bg-red-600 text-white px-4 py-2 rounded">Yes, Delete</button>
+        </div>
       </div>
     </div>
   </div>
@@ -45,6 +58,8 @@ const message = ref('')
 const categories = ref([])
 
 const showModal = ref(false)
+const showConfirmDelete = ref(false)
+
 const editedCategory = ref({
   _id: '',
   name: '',
@@ -85,6 +100,7 @@ const openEditModal = (cat) => {
 
 const closeModal = () => {
   showModal.value = false
+  showConfirmDelete.value = false
 }
 
 // PUT request to update category
@@ -98,10 +114,24 @@ const updateCategory = async () => {
       }
     })
     message.value = res.message
-    showModal.value = false
+    closeModal()
     fetchCategories()
   } catch (err) {
     message.value = err.data?.message || 'Error updating category'
+  }
+}
+
+// DELETE request
+const deleteCategory = async () => {
+  try {
+    const res = await $fetch(`/api/category/${editedCategory.value._id}`, {
+      method: 'DELETE'
+    })
+    message.value = res.message
+    closeModal()
+    fetchCategories()
+  } catch (err) {
+    message.value = err.data?.message || 'Error deleting category'
   }
 }
 

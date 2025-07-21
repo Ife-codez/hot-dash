@@ -12,7 +12,10 @@ export default defineNuxtConfig({
     smtpPass: process.env.SMTP_PASS,
     public: {
       appUrl: process.env.APP_URL
-    }
+    },
+    cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
+    cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
   }
   // tailwindcss:{
   //   configPath: "~/tailwind.config.ts",

@@ -14,6 +14,24 @@ export const useMenuStore = defineStore('menu', {
         body: itemData
       })
       this.items.push(res.item)
+    },
+    async updateMenuItem(id, updatedData) {
+      const res = await $fetch(`/api/menu/${id}`, {
+        method: 'PUT',
+        body: updatedData
+      })
+
+      // Update item in state
+      const index = this.items.findIndex(item => item._id === id)
+      if (index !== -1) this.items[index] = res.item
+    },
+    async deleteMenuItem(id) {
+      await $fetch(`/api/menu/${id}`, {
+        method: 'DELETE'
+      })
+
+      // Remove item from state
+      this.items = this.items.filter(item => item._id !== id)
     }
   }
 })

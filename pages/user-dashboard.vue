@@ -13,6 +13,10 @@
 </template>
 
 <script setup>
+definePageMeta({
+  layout: 'user-layout',
+})
+
 import { useUserStore } from '~/stores/user'
 const userStore = useUserStore()
 const user = userStore.user
