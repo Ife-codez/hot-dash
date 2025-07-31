@@ -1,7 +1,7 @@
 <template>
-  <nav class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow md:hidden">
+  <nav class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow">
     <div class="flex justify-between items-center px-6 py-2">
-      <button @click="navigateTo('/user')" class="flex flex-col items-center">
+      <button @click="navigateTo('/user/dashboard')" class="flex flex-col items-center">
         <Icon name="mdi:home" class="w-6 h-6" />
         <span class="text-xs">Home</span>
       </button>

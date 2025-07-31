@@ -17,12 +17,13 @@
       <menuManager />
     </div>
 
+    <button @click="navigateTo('/admin/messages')">Go To messages</button>
+
     <!-- Add more sections here if needed -->
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import addCategories from '@/components/admin/addCategories.vue'
 import menuManager from '@/components/admin/menuManager.vue'
 import toggleHeader from '@/components/admin/toggleHeader.vue'

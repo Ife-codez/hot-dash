@@ -32,10 +32,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '~/stores/user'
 
 // toast from plugin
 const toast = useNuxtApp().$toast
 const router = useRouter()
+const userStore = useUserStore()
 
 // login form model
 const loginData = ref({
@@ -51,11 +53,18 @@ const handleLogin = async () => {
       body: { ...loginData.value }
     })
 
+    if (res.user) { // <--- CHECK IF USER DATA IS IN THE RESPONSE
+      userStore.setUser(res.user) // <--- CRITICAL: SET USER DATA IN PINIA STORE
+      console.log('User data set in Pinia store:', userStore.user)
+    } else {
+      console.warn('Login successful, but no user data found in response. User store not populated.')
+    }
+
     
     toast.success(res.message || 'Logged in successfully!')
 
     // redirect based on role
-    router.push(res.redirect || '/user-dashboard')
+    router.push(res.redirect || '/user/dashboard')
   } catch (error) {
     toast.error(error?.data?.message || 'Login failed. Try again.')
   }
