@@ -1,11 +1,62 @@
-<script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { useWebSocket } from '@vueuse/core';
-import { useUserStore } from '~/stores/user'; // Adjust path if your store is elsewhere
+<template>
+  <div class="flex flex-col flex-1 bg-white text-black p-4">
+    <h1 class="text-2xl sm:text-3xl font-bold text-orange-500 mb-6 text-center">Chat with Admin</h1>
 
-// Ensure this page is client-side only
+    <div class="flex-1 overflow-y-auto border border-gray-300 rounded-md p-4 mb-4 bg-gray-50 flex flex-col space-y-3">
+      <div v-for="(msg, index) in messages" :key="msg._id || index" class="flex" :class="{'justify-end': msg.senderId === (currentUser && currentUser._id)}">
+        <div 
+          class="max-w-[80%] p-3 rounded-lg text-sm sm:text-base"
+          :class="{
+            'bg-orange-500 text-white': msg.senderId === (currentUser && currentUser._id),
+            'bg-gray-200 text-gray-800': msg.senderId !== (currentUser && currentUser._id),
+            'rounded-bl-none': msg.senderId === (currentUser && currentUser._id),
+            'rounded-br-none': msg.senderId !== (currentUser && currentUser._id)
+          }"
+        >
+          <span 
+            :class="{
+              'font-semibold': true,
+              'text-white': msg.senderId === (currentUser && currentUser._id),
+              'text-gray-800': msg.senderId !== (currentUser && currentUser._id)
+            }"
+          >
+            </span>
+          {{ msg.message }}
+          <span class="block text-right text-xs mt-1" :class="{'text-orange-100': msg.senderId === (currentUser && currentUser._id), 'text-gray-600': msg.senderId !== (currentUser && currentUser._id)}">
+            {{ new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center mt-auto">
+      <input
+        type="text"
+        v-model="messageInput"
+        @keyup.enter="sendMessage"
+        placeholder="Type your message..."
+        :disabled="wsStatus !== 'OPEN'"
+        class="flex-1 p-3 border border-gray-300 rounded-md text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+      />
+      <button
+        @click="sendMessage"
+        :disabled="wsStatus !== 'OPEN' || !messageInput.trim()"
+        class="bg-orange-500 text-white rounded-md px-6 py-3 ml-3 text-sm sm:text-base hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
+      >
+        Send
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { useWebSocket } from '@vueuse/core';
+import { useUserStore } from '~/stores/user';
+
 definePageMeta({
-  ssr: false
+  ssr: false,
+  layout: 'user-layout'
 });
 
 const userStore = useUserStore();
@@ -13,19 +64,17 @@ const currentUser = ref(userStore.user);
 
 const ADMIN_USER_ID = '6881d15eb32e43cbadcb1a79'; // Ensure this matches your admin user's actual _id
 
-const wsUrl = ref(''); // Will be set in onMounted (client-side)
+const wsUrl = ref('');
 
-// Store the useWebSocket instance properties directly as refs
 const wsStatus = ref('CLOSED');
 const wsSend = ref(null);
 const wsData = ref(null);
 
-let wsInstance = null; // Holds the useWebSocket instance methods (open, close)
+let wsInstance = null;
 
 const messages = ref([]);
 const messageInput = ref('');
 
-// Function to handle authentication
 const authenticateWebSocket = () => {
   if (currentUser.value && currentUser.value._id && currentUser.value.role && wsStatus.value === 'OPEN' && wsSend.value) {
     wsSend.value(JSON.stringify({
@@ -33,84 +82,103 @@ const authenticateWebSocket = () => {
       userId: currentUser.value._id,
       role: currentUser.value.role
     }));
-    console.log(`WebSocket authenticated as ${currentUser.value.role} ${currentUser.value._id}`);
-  } else {
-    console.log('Authentication conditions not met yet.', { 
-      hasUser: !!currentUser.value, 
-      wsStatus: wsStatus.value, 
-      hasSend: !!wsSend.value 
-    });
   }
 };
 
-// Function to initialize WebSocket only on client
+const fetchChatHistory = async () => {
+  if (!currentUser.value || !currentUser.value._id) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/messages?user1Id=${currentUser.value._id}&user2Id=${ADMIN_USER_ID}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const history = await response.json();
+    messages.value = history;
+    
+    await nextTick(() => {
+      const chatContainer = document.querySelector('.flex-1.overflow-y-auto');
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    });
+  } catch (error) {
+    console.error('Failed to fetch diner chat history:', error);
+  }
+};
+
 const initializeWebSocket = () => {
-  if (wsInstance) return; // Prevent re-initialization
+  if (wsInstance) return;
 
   const { status, data, send, open, close } = useWebSocket(wsUrl.value, {
-    immediate: false, // We'll call open() explicitly
+    immediate: false,
     onConnected: () => {
-      console.log('Diner WS: Connected!');
-      wsStatus.value = status.value; // Update local status
-      authenticateWebSocket(); // <--- CRITICAL: AUTHENTICATE HERE AFTER CONNECTION IS ESTABLISHED
+      wsStatus.value = status.value;
+      authenticateWebSocket();
     },
     onDisconnected: () => {
-      console.log('Diner WS: Disconnected!');
-      wsStatus.value = status.value; // Update local status
+      wsStatus.value = status.value;
     },
     onError: (webSocket, event) => {
       console.error('Diner WS Error:', event);
-      wsStatus.value = status.value; // Update local status
+      wsStatus.value = status.value;
     },
     onMessage: (webSocket, event) => {
-      // wsData.value = data.value; // Removed this line, as we parse event.data directly
       try {
-        // First, check if event.data is actually a string and not empty
         if (typeof event.data !== 'string' || event.data.trim() === '') {
-          console.warn('WS Received non-string or empty message:', event.data);
-          return; // Skip parsing if not a valid string message
+          return;
         }
 
         const parsedData = JSON.parse(event.data);
-        console.log('Diner WS Received:', parsedData);
 
-        if (parsedData.type === 'system') {
-          console.log(`[System]: ${parsedData.message}`);
-        }
-        else if (parsedData.type === 'chat') {
-          // Check if the message is relevant to this user's chat with the admin
-          if ((parsedData.senderId === (currentUser.value && currentUser.value._id) && parsedData.recipientId === ADMIN_USER_ID) ||
-              (parsedData.senderId === ADMIN_USER_ID && parsedData.recipientId === (currentUser.value && currentUser.value._id))) {
-            messages.value.push(parsedData); // Add to messages displayed
+        if (parsedData.type === 'chat') {
+          const isRelevantMessage = 
+            (parsedData.senderId === (currentUser.value && currentUser.value._id) && parsedData.recipientId === ADMIN_USER_ID) ||
+            (parsedData.senderId === ADMIN_USER_ID && parsedData.recipientId === (currentUser.value && currentUser.value._id));
+          
+          if (isRelevantMessage) {
+            messages.value.push(parsedData);
+            nextTick(() => {
+                const chatContainer = document.querySelector('.flex-1.overflow-y-auto');
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            });
           }
-        } else {
-            console.warn('Diner WS Received unknown message type:', parsedData.type, parsedData);
         }
       } catch (e) {
-        console.error('Failed to parse Diner WS message (likely not JSON):', event.data, e);
+        console.error('Failed to parse Diner WS message:', event.data, e);
       }
     },
   });
   
-  wsStatus.value = status.value; // Initialize with current status
-  wsSend.value = send; // Assign the send function
-  wsData.value = data.value; // Assign the data ref
+  wsStatus.value = status.value;
+  wsSend.value = send;
+  wsData.value = data.value;
 
   wsInstance = { open, close };
-  wsInstance.open(); // Open the connection now
+  wsInstance.open();
 };
 
-// Function to send a message via WebSocket
-const sendMessage = () => {
+const sendMessage = async () => {
   if (messageInput.value.trim() && wsStatus.value === 'OPEN' && wsSend.value && currentUser.value && currentUser.value._id) {
     const chatMessage = {
       type: 'chatMessage',
       senderId: currentUser.value._id,
-      recipientId: ADMIN_USER_ID, // Always sending to the specific admin user
+      recipientId: ADMIN_USER_ID,
       message: messageInput.value.trim(),
     };
-    wsSend.value(JSON.stringify(chatMessage)); // Use the assigned send function
-    messageInput.value = ''; // Clear input after sending
+    wsSend.value(JSON.stringify(chatMessage));
+    messageInput.value = '';
+
+    await nextTick(() => {
+      const chatContainer = document.querySelector('.flex-1.overflow-y-auto');
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    });
   } else if (wsStatus.value !== 'OPEN') {
     alert('WebSocket is not open. Please wait or refresh.');
   } else if (!currentUser.value || !currentUser.value._id) {
@@ -118,50 +186,27 @@ const sendMessage = () => {
   }
 };
 
-// Lifecycle hook: runs when component is mounted on the client-side
 onMounted(() => {
-  wsUrl.value = `ws://${window.location.host}/_ws`; // Set WS URL on client
-  initializeWebSocket(); // Initialize WebSocket ONLY after URL is set and on client-side
+  wsUrl.value = `ws://${window.location.host}/_ws`;
+  initializeWebSocket();
 });
 
-// Lifecycle hook: runs when component is unmounted
+watch(() => userStore.user, async (newUserDetails) => {
+  currentUser.value = newUserDetails;
+  authenticateWebSocket();
+  if (newUserDetails && newUserDetails._id) {
+    await fetchChatHistory();
+  }
+}, { immediate: true });
+
 onUnmounted(() => {
   if (wsInstance) {
-    wsInstance.close(); // Close the WebSocket connection cleanly
+    wsInstance.close();
   }
 });
-
-// Watcher: Reacts when userStore.user data changes
-watch(() => userStore.user, (newUserDetails) => {
-  currentUser.value = newUserDetails;
-  authenticateWebSocket(); // Attempt to authenticate after user data updates
-}, { immediate: true });
 </script>
 
-<template>
-  <div style="max-width: 600px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
-    <h1>Chat with Admin</h1>
-    <p>WS Status: <strong>{{ wsStatus }}</strong></p>
-    <p>Your User ID: <strong>{{ currentUser ? currentUser._id : 'Loading...' }}</strong></p>
-    <p>Your Role: <strong>{{ currentUser ? currentUser.role : 'Loading...' }}</strong></p>
-
-    <div style="border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 8px; background-color: #fff;">
-      <div v-for="(msg, index) in messages" :key="index" style="margin-bottom: 8px;">
-        <strong :style="{ color: msg.senderId === (currentUser && currentUser._id) ? 'blue' : 'green' }">
-          {{ msg.senderId === (currentUser && currentUser._id) ? 'You' : (msg.senderRole === 'admin' ? 'Admin' : 'Unknown') }}:
-        </strong>
-        {{ msg.message }}
-        <span style="font-size: 0.8em; color: #888;"> ({{ new Date(msg.timestamp).toLocaleTimeString() }})</span>
-      </div>
-    </div>
-    <div>
-      <input
-        type="text"
-        v-model="messageInput"
-        @keyup.enter="sendMessage"
-        placeholder="Type your message..."
-        :disabled="wsStatus !== 'OPEN'" style="width: calc(100% - 70px); padding: 8px;"
-      />
-      <button @click="sendMessage" :disabled="wsStatus !== 'OPEN'" style="padding: 8px 12px; margin-left: 5px;">Send</button> </div>
-  </div>
-</template>
+<style scoped>
+/* No specific styles needed here, as Tailwind handles most of it
+   and the layout should manage overall page height. */
+</style>

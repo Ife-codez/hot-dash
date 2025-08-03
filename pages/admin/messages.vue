@@ -1,9 +1,94 @@
-<script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { useWebSocket } from '@vueuse/core';
-import { useUserStore } from '~/stores/user'; // Adjust path if your store is elsewhere
+<template>
+  <div class="min-h-screen bg-white text-black flex flex-col">
+    <div v-if="showUserList" class="flex-1 p-4 sm:p-6 lg:p-8">
+      <h1 class="text-2xl sm:text-3xl font-bold text-orange-500 mb-6">Diner Users</h1>
+      <ul class="space-y-2">
+        <li v-if="allUsers.length === 0" class="text-gray-600 italic">No diners found or still loading...</li>
+        <li
+          v-for="user in allUsers"
+          :key="user.id"
+          @click="selectUserToChat(user.id)"
+          :class="{
+            'cursor-pointer p-3 rounded-md transition-colors duration-200': true,
+            'bg-orange-100 text-orange-800 font-semibold': selectedUserId === user.id,
+            'bg-gray-50 hover:bg-gray-100': selectedUserId !== user.id
+          }"
+        >
+          {{ user.name }}
+        </li>
+      </ul>
+    </div>
 
-// Ensure this page is client-side only
+    <div v-else-if="selectedUserId" class="flex-1 flex flex-col p-4 sm:p-6 lg:p-8">
+      <div class="flex items-center mb-4">
+        <button
+          @click="goBackToUserList"
+          class="bg-orange-500 text-white rounded-md px-4 py-2 text-sm sm:text-base hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
+        >
+          &larr; Back to Users
+        </button>
+        <h2 class="text-xl sm:text-2xl font-semibold text-orange-500 ml-4 truncate">
+          Chatting with: {{ allUsers.find(u => u.id === selectedUserId)?.name || 'Loading...' }}
+        </h2>
+      </div>
+
+      <div class="flex-1 overflow-y-auto border border-gray-300 rounded-md p-4 mb-4 bg-gray-50 flex flex-col space-y-3">
+        <div v-for="(msg, index) in messages" :key="msg._id || index" class="flex" :class="{'justify-end': msg.senderId === (currentUser && currentUser._id)}">
+          <div 
+            class="max-w-[70%] p-3 rounded-lg text-sm sm:text-base"
+            :class="{
+              'bg-orange-500 text-white': msg.senderId === (currentUser && currentUser._id),
+              'bg-gray-200 text-gray-800': msg.senderId !== (currentUser && currentUser._id),
+              'rounded-bl-none': msg.senderId === (currentUser && currentUser._id),
+              'rounded-br-none': msg.senderId !== (currentUser && currentUser._id)
+            }"
+          >
+            <strong 
+              :class="{
+                'text-white': msg.senderId === (currentUser && currentUser._id),
+                'text-gray-800': msg.senderId !== (currentUser && currentUser._id)
+              }"
+            >
+              {{ msg.senderId === (currentUser && currentUser._id) ? 'You' : (allUsers.find(u => u.id === msg.senderId)?.name || msg.senderId) }}:
+            </strong>
+            {{ msg.message }}
+            <span class="block text-right text-xs mt-1" :class="{'text-orange-100': msg.senderId === (currentUser && currentUser._id), 'text-gray-600': msg.senderId !== (currentUser && currentUser._id)}">
+              {{ new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center">
+        <input
+          type="text"
+          v-model="messageInput"
+          @keyup.enter="sendMessage"
+          placeholder="Type your message..."
+          :disabled="wsStatus !== 'OPEN'"
+          class="flex-1 p-3 border border-gray-300 rounded-md text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+        />
+        <button
+          @click="sendMessage"
+          :disabled="wsStatus !== 'OPEN' || !messageInput.trim()"
+          class="bg-orange-500 text-white rounded-md px-6 py-3 ml-3 text-sm sm:text-base hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+    
+    <div v-else class="flex-1 flex items-center justify-center p-4">
+      <p class="text-center text-gray-600 text-lg">Select a user from the list to start chatting.</p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { useWebSocket } from '@vueuse/core';
+import { useUserStore } from '~/stores/user';
+
 definePageMeta({
   ssr: false
 });
@@ -11,127 +96,143 @@ definePageMeta({
 const userStore = useUserStore();
 const currentUser = ref(userStore.user);
 
-const wsUrl = ref(''); // Will be set in onMounted (client-side)
+const wsUrl = ref('');
 
-// Store the useWebSocket instance properties directly as refs
-const wsStatus = ref('CLOSED'); // Reflects the current WebSocket status (CONNECTING, OPEN, CLOSED, ERROR)
-const wsSend = ref(null); // Will hold the send function from useWebSocket
-const wsData = ref(null); // Will hold the latest data received from useWebSocket
+const wsStatus = ref('CLOSED');
+const wsSend = ref(null);
+const wsData = ref(null); // Keep if you use wsData, otherwise can remove
 
-// This variable will hold the actual useWebSocket instance to call its methods (open, close)
-let wsInstance = null; 
+let wsInstance = null;
 
 const selectedUserId = ref(null);
 const messages = ref([]);
 const messageInput = ref('');
 
-const allUsers = ref([]); // Populated from API
-
-// Maps to store chat history for each user. Key: userId, Value: Array of messages
+const allUsers = ref([]);
 const chatHistories = ref(new Map());
 
-// Function to handle authentication
+const showUserList = ref(true); // Controls which view is active
+
 const authenticateWebSocket = () => {
-  // Ensure we have user data, WebSocket is open, and the send function is available
   if (currentUser.value && currentUser.value._id && currentUser.value.role && wsStatus.value === 'OPEN' && wsSend.value) {
     wsSend.value(JSON.stringify({
       type: 'authenticate',
       userId: currentUser.value._id,
       role: currentUser.value.role
     }));
-    console.log(`WebSocket authenticated as ${currentUser.value.role} ${currentUser.value._id}`);
-  } else {
-    // Log why authentication isn't happening, useful for debugging
-    console.log('Authentication conditions not met yet.', { 
-      hasUser: !!currentUser.value, 
-      wsStatus: wsStatus.value, 
-      hasSend: !!wsSend.value 
-    });
   }
 };
 
-// Function to initialize WebSocket only on client
-const initializeWebSocket = () => {
-  // Guard to prevent re-initialization if already done
-  if (wsInstance) return;
+const fetchUserChatHistory = async (userId) => {
+  if (!currentUser.value || !currentUser.value._id || !userId) {
+    return;
+  }
 
-  const { status, data, send, open, close } = useWebSocket(wsUrl.value, {
-    immediate: false, // We'll call open() explicitly after setup
-    onConnected: () => {
-      console.log('Admin WS: Connected!');
-      wsStatus.value = status.value; // Update local status to 'OPEN'
-      authenticateWebSocket(); // <--- CRITICAL: AUTHENTICATE HERE AFTER CONNECTION IS ESTABLISHED
-    },
-    onDisconnected: () => {
-      console.log('Admin WS: Disconnected!');
-      wsStatus.value = status.value; // Update local status to 'CLOSED'
-    },
-    onError: (webSocket, event) => {
-      console.error('Admin WS Error:', event);
-      wsStatus.value = status.value; // Update local status to 'ERROR'
-    },
-    onMessage: (webSocket, event) => {
-      // wsData.value = data.value; // Removed this line, as we parse event.data directly
+  // If history is already in cache, no need to refetch
+  if (chatHistories.value.has(userId) && chatHistories.value.get(userId).length > 0) {
+      return;
+  }
 
-      try {
-        // First, check if event.data is actually a string and not empty
-        if (typeof event.data !== 'string' || event.data.trim() === '') {
-          console.warn('WS Received non-string or empty message:', event.data);
-          return; // Skip parsing if not a valid string message
-        }
-
-        const parsedData = JSON.parse(event.data);
-        console.log('Admin WS Received:', parsedData);
-
-        if (parsedData.type === 'system') {
-          console.log(`[System]: ${parsedData.message}`);
-        } else if (parsedData.type === 'chat') {
-          // Determine the user whose chat history this message belongs to
-          const targetUserId = parsedData.senderId === currentUser.value._id ? parsedData.recipientId : parsedData.senderId;
-          
-          // Initialize chat history for the target user if it doesn't exist
-          if (!chatHistories.value.has(targetUserId)) {
-            chatHistories.value.set(targetUserId, []);
-          }
-          // Add the message to the specific user's chat history
-          chatHistories.value.get(targetUserId).push(parsedData);
-
-          // If the message is for the currently selected user, update the displayed messages
-          if (targetUserId === selectedUserId.value) {
-            messages.value = chatHistories.value.get(targetUserId);
-          }
-        } else {
-            console.warn('Admin WS Received unknown message type:', parsedData.type, parsedData);
-        }
-      } catch (e) {
-        console.error('Failed to parse Admin WS message (likely not JSON):', event.data, e);
-      }
-    },
-  });
-
-  // Assign the reactive properties/methods from useWebSocket to local refs for easier access
-  // and to ensure reactivity propagates
-  wsStatus.value = status.value; // Initialize with current status (likely 'CONNECTING')
-  wsSend.value = send; // Assign the send function
-  wsData.value = data.value; // Assign the data ref
-
-  wsInstance = { open, close }; // Store open/close methods for onMounted/onUnmounted
-  wsInstance.open(); // Open the connection now
+  try {
+    const response = await fetch(`/api/messages?user1Id=${currentUser.value._id}&user2Id=${userId}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const history = await response.json();
+    chatHistories.value.set(userId, history);
+  } catch (error) {
+    console.error(`Failed to fetch chat history for user ${userId}:`, error);
+  }
 };
 
-// Function to select a user from the list to chat with
-const selectUserToChat = (userId) => {
+const selectUserToChat = async (userId) => {
   selectedUserId.value = userId;
-  // Load existing messages for the selected user, or initialize an empty array
+  showUserList.value = false; // Switch to chat view
+
+  if (currentUser.value && currentUser.value._id) {
+    await fetchUserChatHistory(userId);
+  }
+
+  // Ensure an empty array if history fetch failed or none exists
   if (!chatHistories.value.has(userId)) {
     chatHistories.value.set(userId, []);
   }
   messages.value = chatHistories.value.get(userId);
+  
+  // Scroll to bottom of chat after messages are loaded and rendered
+  await nextTick(() => {
+    const chatContainer = document.querySelector('.flex-1.overflow-y-auto');
+    if (chatContainer) {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+  });
 };
 
-// Function to send a message via WebSocket
-const sendMessage = () => {
-  // Validate input and WebSocket status before sending
+const goBackToUserList = () => {
+  selectedUserId.value = null;
+  messages.value = []; // Clear messages when going back
+  showUserList.value = true; // Switch back to user list view
+};
+
+const initializeWebSocket = () => {
+  // Prevent re-initialization
+  if (wsInstance) return;
+
+  const { status, data, send, open, close } = useWebSocket(wsUrl.value, {
+    immediate: false,
+    onConnected: () => {
+      wsStatus.value = status.value;
+      authenticateWebSocket();
+    },
+    onDisconnected: () => {
+      wsStatus.value = status.value;
+    },
+    onError: (webSocket, event) => {
+      console.error('Admin WS Error:', event);
+      wsStatus.value = status.value;
+    },
+    onMessage: (webSocket, event) => {
+      try {
+        if (typeof event.data !== 'string' || event.data.trim() === '') {
+          return;
+        }
+
+        const parsedData = JSON.parse(event.data);
+
+        if (parsedData.type === 'chat') {
+          const targetUserId = parsedData.senderId === currentUser.value._id ? parsedData.recipientId : parsedData.senderId;
+          
+          if (!chatHistories.value.has(targetUserId)) {
+            chatHistories.value.set(targetUserId, []);
+          }
+          chatHistories.value.get(targetUserId).push(parsedData);
+
+          // Only update `messages.value` if the currently selected user is the target
+          if (targetUserId === selectedUserId.value) {
+            messages.value = chatHistories.value.get(targetUserId);
+            nextTick(() => {
+                const chatContainer = document.querySelector('.flex-1.overflow-y-auto');
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse Admin WS message:', event.data, e);
+      }
+    },
+  });
+  
+  wsStatus.value = status.value;
+  wsSend.value = send;
+  wsData.value = data.value;
+
+  wsInstance = { open, close };
+  wsInstance.open();
+};
+
+const sendMessage = async () => {
   if (messageInput.value.trim() && wsStatus.value === 'OPEN' && wsSend.value && selectedUserId.value && currentUser.value && currentUser.value._id) {
     const chatMessage = {
       type: 'chatMessage',
@@ -139,8 +240,16 @@ const sendMessage = () => {
       recipientId: selectedUserId.value,
       message: messageInput.value.trim(),
     };
-    wsSend.value(JSON.stringify(chatMessage)); // Use the assigned send function
-    messageInput.value = ''; // Clear input after sending
+    wsSend.value(JSON.stringify(chatMessage));
+    messageInput.value = '';
+    
+    // Scroll after sending and potentially new message is added
+    await nextTick(() => {
+      const chatContainer = document.querySelector('.flex-1.overflow-y-auto');
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    });
   } else if (!selectedUserId.value) {
     alert('Please select a user to chat with.');
   } else if (wsStatus.value !== 'OPEN') {
@@ -150,85 +259,38 @@ const sendMessage = () => {
   }
 };
 
-// Lifecycle hook: runs when component is mounted on the client-side
 onMounted(async () => {
-  // Set the WebSocket URL only on the client side, using window.location.host
   wsUrl.value = `ws://${window.location.host}/_ws`;
-  initializeWebSocket(); // Initialize WebSocket ONLY after URL is set and on client-side
+  initializeWebSocket();
 
-  // Fetch all users (diners) from your API for the admin to select from
   try {
     const response = await fetch('/api/users');
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     allUsers.value = await response.json();
-    console.log('Fetched diner users:', allUsers.value);
   } catch (error) {
     console.error('Failed to fetch diner users:', error);
   }
 });
 
-// Lifecycle hook: runs when component is unmounted (e.g., navigating away)
 onUnmounted(() => {
   if (wsInstance) {
-    wsInstance.close(); // Close the WebSocket connection cleanly
+    wsInstance.close();
   }
 });
 
-// Watcher: Reacts when userStore.user data changes (e.g., after login/refresh)
 watch(() => userStore.user, (newUserDetails) => {
-  currentUser.value = newUserDetails; // Update local currentUser ref
-  // Attempt to authenticate the WebSocket. This is safe because authenticateWebSocket
-  // itself checks if the WS is open. It handles cases where user data loads before/after WS connects.
-  authenticateWebSocket(); 
-}, { immediate: true }); // 'immediate: true' means this watcher runs once immediately on component setup
+  currentUser.value = newUserDetails;
+  authenticateWebSocket();
+  // If a user is already selected when the admin user details load,
+  // try to fetch their history
+  if (newUserDetails && newUserDetails._id && selectedUserId.value) {
+      fetchUserChatHistory(selectedUserId.value);
+  }
+}, { immediate: true });
 </script>
 
-<template>
-  <div style="display: flex; height: 100vh;">
-    <div style="width: 250px; border-right: 1px solid #eee; padding: 15px; background-color: #f8f8f8;">
-      <h2>Diner Users</h2>
-      <ul style="list-style: none; padding: 0;">
-        <li v-if="allUsers.length === 0" style="color: #666; font-style: italic;">No diners found or still loading...</li>
-        <li v-for="user in allUsers" :key="user.id"
-            @click="selectUserToChat(user.id)"
-            :style="{ cursor: 'pointer', padding: '10px', marginBottom: '5px', borderRadius: '5px', backgroundColor: selectedUserId === user.id ? '#e0e0e0' : 'white' }">
-          {{ user.name }} (ID: {{ user.id.substring(0, 8) }}...)
-        </li>
-      </ul>
-    </div>
-
-    <div style="flex: 1; padding: 20px; display: flex; flex-direction: column;">
-      <h1>Admin Chat Dashboard</h1>
-      <p>WS Status: <strong>{{ wsStatus }}</strong></p>
-      <p>Your User ID: <strong>{{ currentUser ? currentUser._id : 'Loading...' }}</strong></p>
-      <p>Your Role: <strong>{{ currentUser ? currentUser.role : 'Loading...' }}</strong></p>
-
-      <div v-if="selectedUserId">
-        <h3>Chatting with: {{ allUsers.find(u => u.id === selectedUserId)?.name || selectedUserId }}</h3>
-        <div style="border: 1px solid #ccc; height: 400px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background-color: #fff;">
-          <div v-for="(msg, index) in messages" :key="index" style="margin-bottom: 8px;">
-            <strong :style="{ color: msg.senderId === (currentUser && currentUser._id) ? 'blue' : 'green' }">
-              {{ msg.senderId === (currentUser && currentUser._id) ? 'You' : (allUsers.find(u => u.id === msg.senderId)?.name || msg.senderId) }}:
-            </strong>
-            {{ msg.message }}
-            <span style="font-size: 0.8em; color: #888;"> ({{ new Date(msg.timestamp).toLocaleTimeString() }})</span>
-          </div>
-        </div>
-        <div>
-          <input
-            type="text"
-            v-model="messageInput"
-            @keyup.enter="sendMessage"
-            placeholder="Type message to user..."
-            :disabled="wsStatus !== 'OPEN'" style="width: calc(100% - 70px); padding: 8px;"
-          />
-          <button @click="sendMessage" :disabled="wsStatus !== 'OPEN'" style="padding: 8px 12px; margin-left: 5px;">Send</button> </div>
-      </div>
-      <div v-else style="text-align: center; color: #666; margin-top: 50px;">
-        Select a user from the left to start chatting.
-      </div>
-    </div>
-  </div>
-</template>
+<style scoped>
+/* You can add any custom CSS here that cannot be achieved with Tailwind */
+</style>

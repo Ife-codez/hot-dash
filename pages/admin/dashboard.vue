@@ -18,6 +18,7 @@
     </div>
 
     <button @click="navigateTo('/admin/messages')">Go To messages</button>
+    <button @click="navigateTo('/admin/orders')">Go To orders</button>
 
     <!-- Add more sections here if needed -->
   </div>

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <UserNav />
+    <!-- <UserNav /> -->
     <div class="mt-4 px-4">
       <h2 class="text-lg font-semibold text-orange-500">
         Hi {{ user?.name || 'Guest' }} 

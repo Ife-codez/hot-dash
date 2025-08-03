@@ -13,6 +13,13 @@
 
       <button @click="navigateTo('/user/cart')" class="relative -mt-6 p-3 bg-orange-500 rounded-full text-white shadow-lg">
         <Icon name="mdi:cart" class="w-6 h-6" />
+        
+        <span 
+          v-if="cartStore.totalItems > 0"
+          class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center"
+        >
+          {{ cartStore.totalItems }}
+        </span>
       </button>
 
       <button @click="navigateTo('/user/notifications')" class="flex flex-col items-center">
@@ -29,7 +36,10 @@
 </template>
 
 <script setup>
+import { useCartStore } from '~/stores/cart'
+
 const navigateTo = useRouter().push
+const cartStore = useCartStore()
 </script>
 
 <style scoped>

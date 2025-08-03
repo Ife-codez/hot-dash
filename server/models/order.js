@@ -1,5 +1,6 @@
 import { defineMongooseModel } from '#nuxt/mongoose'
-export const order =  defineMongooseModel('Order', {
+import mongoose from 'mongoose'
+export default defineMongooseModel('Order', {
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true},
   items: [
     {
@@ -9,6 +10,7 @@ export const order =  defineMongooseModel('Order', {
   ],
   totalAmount: {type: Number, required: true},
   deliveryAddress: String,
+  deliveryPhone: String,
   status: {
     type: String,
     enum: ['pending', 'delivered', 'cancelled'],

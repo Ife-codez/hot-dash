@@ -1,116 +1,109 @@
 // server/routes/_ws.js
 import { defineWebSocketHandler } from '#imports';
+import { useMongooseModel } from '~/server/utils/useMongooseModel'; // <--- UPDATED IMPORT
 
-// --- Admin's MongoDB _id ---
-// Make sure this matches the actual admin user's _id in your MongoDB
-const ADMIN_USER_ID = '6881d15eb32e43cbadcb1a79';
-
-// A simple in-memory map to store userId (MongoDB _id) to peerId relationships.
-// Reminder: For production with multiple instances, use Redis or similar.
-const userToPeerMap = new Map(); // Map<string userId, string peerId>
-const peerToUserMap = new Map(); // Map<string peerId, { userId: string, role: string }>
+const connectedClients = new Map(); // Stores connected and authenticated clients
 
 export default defineWebSocketHandler({
   open(peer) {
     console.log('[ws] open:', peer.id);
-    // Still waiting for 'authenticate' message for user identification
   },
 
-  message(peer, message) {
-    const msgText = message.text();
-    // console.log('[ws] message from', peer.id, ':', msgText); // Uncomment for more verbose logging
+  async message(peer, message) {
+    console.log('[ws] message:', peer.id, message.text());
+
+    // Get the Message model using your custom utility
+    const Message = useMongooseModel('Message'); // <--- GET THE MESSAGE MODEL HERE
 
     try {
-      const parsedData = JSON.parse(msgText);
+      const parsed = JSON.parse(message.text());
 
-      // --- 1. Authentication/Identification Message ---
-      if (parsedData.type === 'authenticate') {
-        const { userId, role } = parsedData; // userId will be the MongoDB _id
-        if (!userId || !role) {
-          peer.send(JSON.stringify({ type: 'error', message: 'Authentication message missing userId or role.' }));
-          return;
-        }
-
-        userToPeerMap.set(userId, peer.id);
-        peerToUserMap.set(peer.id, { userId, role });
-        peer.subscribe(`user:${userId}`); // Subscribe to their personal channel
-        peer.send(JSON.stringify({ type: 'system', message: `Authenticated as ${role} ${userId}. Ready for chat.` }));
-        console.log(`[ws] Authenticated: Peer ${peer.id} as ${role} ${userId}`);
-
-        // Optional: Notify admin if a diner connects
-        if (role === 'diner') {
-          const adminPeerId = userToPeerMap.get(ADMIN_USER_ID);
-          if (adminPeerId) {
-            peer.sendTo(adminPeerId, JSON.stringify({ type: 'notification', message: `Diner ${userId} is now online.` }));
+      if (parsed.type === 'authenticate') {
+        const { userId, role } = parsed;
+        if (userId && role) {
+          if (connectedClients.has(peer.id)) {
+            console.log(`[ws] Re-authenticating ${peer.id} as ${role} ${userId}`);
+          } else {
+            console.log(`[ws] Authenticating ${peer.id} as ${role} ${userId}`);
           }
+          connectedClients.set(peer.id, { userId, role, peer }); 
+          peer.send(JSON.stringify({ type: 'system', message: `Authenticated as ${role}. Ready for chat.` }));
+        } else {
+          peer.send(JSON.stringify({ type: 'system', message: 'Authentication failed: missing userId or role.' }));
+          console.warn(`[ws] Authentication attempt failed for ${peer.id}: missing userId or role.`);
         }
-        return;
-      }
+      } else if (parsed.type === 'chatMessage') {
+        const { senderId, recipientId, message: chatText } = parsed;
 
-      // --- 2. Private Chat Message ---
-      if (parsedData.type === 'chatMessage') {
-        const { senderId, recipientId, message: chatContent } = parsedData;
-        const senderInfo = peerToUserMap.get(peer.id);
-
-        if (!senderInfo || senderInfo.userId !== senderId) {
-          peer.send(JSON.stringify({ type: 'error', message: 'Unauthorized sender ID.' }));
+        const sender = connectedClients.get(peer.id);
+        if (!sender || sender.userId !== senderId) {
+          peer.send(JSON.stringify({ type: 'system', message: 'Not authenticated or sender ID mismatch.' }));
+          console.warn(`[ws] Unauthorized chat attempt from ${peer.id}: senderId ${senderId}`);
           return;
         }
-        if (!recipientId || !chatContent) {
-          peer.send(JSON.stringify({ type: 'error', message: 'Chat message missing recipientId or content.' }));
-          return;
+
+        // --- PERSISTENCE LOGIC STARTS HERE ---
+        try {
+          const newMessage = new Message({ // Use the model obtained from useMongooseModel
+            senderId,
+            recipientId,
+            message: chatText,
+            timestamp: new Date(), // Use current server time for consistency
+            senderRole: sender.role
+          });
+          
+          await newMessage.save(); // Save the message to MongoDB
+
+          console.log('[ws] Message saved to DB:', newMessage._id);
+
+          const messageToBroadcast = {
+            type: 'chat',
+            _id: newMessage._id, // Include the MongoDB ID
+            senderId: newMessage.senderId,
+            senderRole: newMessage.senderRole,  
+            recipientId: newMessage.recipientId,
+            message: newMessage.message,
+            timestamp: newMessage.timestamp.toISOString() 
+          };
+
+          let recipientFound = false;
+          for (const [, client] of connectedClients) {
+            if (client.userId === recipientId) {
+              client.peer.send(JSON.stringify(messageToBroadcast));
+              recipientFound = true;
+              break;
+            }
+          }
+          
+          peer.send(JSON.stringify(messageToBroadcast)); 
+
+          if (!recipientFound) {
+            peer.send(JSON.stringify({ type: 'system', message: `Recipient ${recipientId} not found or offline.` }));
+          }
+
+        } catch (dbError) {
+          console.error('[ws] Error saving message to DB:', dbError);
+          peer.send(JSON.stringify({ type: 'system', message: 'Failed to send message: Database error.' }));
         }
+        // --- PERSISTENCE LOGIC ENDS HERE ---
 
-        const formattedMessage = JSON.stringify({
-          type: 'chat',
-          senderId: senderId,
-          recipientId: recipientId,
-          message: chatContent,
-          timestamp: Date.now(),
-          senderRole: senderInfo.role
-        });
-
-        // Publish to the sender's private channel (for display on their own side)
-        peer.publish(`user:${senderId}`, formattedMessage);
-
-        // Publish to the recipient's private channel
-        peer.publish(`user:${recipientId}`, formattedMessage);
-
-        console.log(`[ws] Private message from ${senderId} to ${recipientId}`);
-        return;
+      } else {
+        peer.send(JSON.stringify({ type: 'system', message: `Unknown message type or invalid format: ${parsed.type || 'N/A'}` }));
+        console.warn(`[ws] Received unhandled message type: ${parsed.type || 'N/A'} from ${peer.id}`);
       }
-
     } catch (e) {
-      console.error('[ws] Failed to parse message or unknown message type:', msgText, e);
-      peer.send(JSON.stringify({
-        type: 'error',
-        message: 'Invalid message format or unknown message type. Please send valid JSON.',
-        timestamp: Date.now()
-      }));
+      console.error('[ws] Invalid JSON message received:', message.text(), e);
+      peer.send(JSON.stringify({ type: 'system', message: 'Invalid message format.' }));
     }
   },
 
-  close(peer, details) {
-    console.log('[ws] close:', peer.id, details.code, details.reason);
-    const userInfo = peerToUserMap.get(peer.id);
-    if (userInfo) {
-      userToPeerMap.delete(userInfo.userId);
-      peerToUserMap.delete(peer.id);
-      console.log(`[ws] User ${userInfo.userId} disconnected.`);
-      // Optional: Notify admin if a diner goes offline
-      const adminPeerId = userToPeerMap.get(ADMIN_USER_ID);
-      if (adminPeerId) {
-        peer.sendTo(adminPeerId, JSON.stringify({ type: 'notification', message: `Diner ${userInfo.userId} is now offline.` }));
-      }
-    }
+  close(peer, event) {
+    console.log('[ws] close:', peer.id, event.code, event.reason);
+    connectedClients.delete(peer.id); 
   },
 
   error(peer, error) {
     console.error('[ws] error:', peer.id, error);
-    peer.send(JSON.stringify({
-      type: 'error',
-      message: 'An error occurred on the server.',
-      timestamp: Date.now()
-    }));
-  },
+    connectedClients.delete(peer.id);
+  }
 });
