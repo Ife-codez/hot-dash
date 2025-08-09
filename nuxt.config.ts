@@ -1,9 +1,10 @@
-
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
   // css: ['@/assets/css/tailwind.css'],
-  modules: ['nuxt-mongoose', '@pinia/nuxt', '@nuxt/icon', '@nuxtjs/tailwindcss',],
+  modules: ['nuxt-mongoose', '@pinia/nuxt', '@nuxt/icon', '@nuxtjs/tailwindcss'],
+  
+
   mongoose: {
     uri: process.env.MONGO_URI,
   },
@@ -21,11 +22,15 @@ export default defineNuxtConfig({
     cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
     cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
     cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
+    authSecret: process.env.AUTH_SECRET,
   },
-  // plugins: [
-  //   '~/plugins/pinia-persisted.js', 
-  // ],
+
+  // This is the new, un-commented plugins section
+  plugins: [
+    '~/plugins/pinia-persisted-state.client.js',
+  ],
+
   // tailwindcss:{
-  //   configPath: "~/tailwind.config.ts",
+  //   configPath: "~/tailwind.config.ts",
   // }
 })

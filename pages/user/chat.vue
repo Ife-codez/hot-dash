@@ -50,14 +50,14 @@
 </template>
 
 <script setup>
+definePageMeta({
+  ssr: false,
+  middleware: ['auth-check'],
+  layout: 'user-layout'
+});
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useWebSocket } from '@vueuse/core';
 import { useUserStore } from '~/stores/user';
-
-definePageMeta({
-  ssr: false,
-  layout: 'user-layout'
-});
 
 const userStore = useUserStore();
 const currentUser = ref(userStore.user);

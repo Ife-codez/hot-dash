@@ -36,7 +36,7 @@ import { useUserStore } from '~/stores/user'
 
 // toast from plugin
 const toast = useNuxtApp().$toast
-const router = useRouter()
+// const router = useRouter()
 const userStore = useUserStore()
 
 // login form model
@@ -51,24 +51,23 @@ const handleLogin = async () => {
     const res = await $fetch('/api/auth/login', {
       method: 'POST',
       body: { ...loginData.value }
-    })
+    });
 
-    if (res.user) { // <--- CHECK IF USER DATA IS IN THE RESPONSE
-      userStore.setUser(res.user) // <--- CRITICAL: SET USER DATA IN PINIA STORE
-      console.log('User data set in Pinia store:', userStore.user)
-    } else {
-      console.warn('Login successful, but no user data found in response. User store not populated.')
+    // Set user data in the Pinia store if needed
+    if (res.user) {
+      userStore.setUser(res.user);
     }
 
-    
-    toast.success(res.message || 'Logged in successfully!')
+    toast.success(res.message || 'Logged in successfully!');
 
-    // redirect based on role
-    router.push(res.redirect || '/user/dashboard')
+    // Force an SSR reload so HTTP-only cookie is sent to server immediately
+    await navigateTo(res.redirect || '/user/dashboard', { replace: true, external: true });
+    console.log('Auth middleware cookie:', getCookie(event, 'auth_token'));
   } catch (error) {
-    toast.error(error?.data?.message || 'Login failed. Try again.')
+    toast.error(error?.data?.statusMessage || 'Login failed. Try again.');
   }
-}
+};
+
 </script>
 
 

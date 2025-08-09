@@ -85,33 +85,25 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue';
+definePageMeta({
+  middleware: ['auth-check'],
+  layout: 'user-layout'
+});
+import { computed } from 'vue';
 import { useOrderStore } from '~/stores/order';
 import { useUserStore } from '~/stores/user';
 
-definePageMeta({
-  layout: 'user-layout'
-});
 
 const orderStore = useOrderStore();
 const userStore = useUserStore();
 
-// Fetch orders from the server when the page loads, using the user's ID
-onMounted(async () => {
-  if (userStore.user?._id) {
-    await orderStore.fetchOrders(userStore.user._id);
-  } else {
-    // Handle the case where the user is not logged in or ID is not available
-    console.error('User ID not available to fetch orders.');
-  }
-});
+// The onMounted, onUnmounted, and polling-related code has been removed.
+// The data fetching is now handled globally by a Nuxt plugin.
 
-// Computed property to show only pending orders
 const pendingOrders = computed(() => {
   return orderStore.orders.filter(order => order.status === 'pending');
 });
 
-// Computed property to show only delivered orders
 const deliveredOrders = computed(() => {
   return orderStore.orders.filter(order => order.status === 'delivered');
 });

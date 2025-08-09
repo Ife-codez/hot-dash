@@ -7,6 +7,11 @@ export const useUserStore = defineStore('user', {
     setUser(data) {
       this.user = data
     },
+    updateAvatar(avatarUrl) {
+      if (this.user) {
+         this.user.avatar = avatarUrl;
+      }
+    },
     logout() { 
       this.user = null; 
       

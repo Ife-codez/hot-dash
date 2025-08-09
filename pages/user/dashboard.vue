@@ -14,12 +14,14 @@
 
 <script setup>
 definePageMeta({
+  middleware: ['auth-check'],
   layout: 'user-layout',
 })
 
 import { useUserStore } from '~/stores/user'
 const userStore = useUserStore()
-const user = userStore.user
+const user = computed(() => userStore.user)
+
 
 </script>
 

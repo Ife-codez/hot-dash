@@ -59,15 +59,15 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: ['auth-check'],
+  layout: 'user-layout'
+});
 import { useUserStore } from '~/stores/user'
 import { useCartStore } from '~/stores/cart'
 import { useOrderStore } from '~/stores/order'
 import cartItemList from '~/components/cartItemList.vue'
 import deliveryForm from '~/components/deliveryForm.vue'
-
-definePageMeta({
-  layout: 'user-layout'
-});
 
 const userStore = useUserStore(); // Corrected name to avoid conflict
 const cartStore = useCartStore();

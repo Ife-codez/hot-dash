@@ -5,6 +5,7 @@ export default defineMongooseModel('User', {
   password: String,
   location: String,
   role: { type: String, enum: ['diner', 'admin'], default: 'diner' },
+  avatar: { type: String},
   verified: { type: Boolean, default: false },
   verifyToken: String,
   verifyTokenExpires: Date,
