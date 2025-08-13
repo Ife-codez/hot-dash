@@ -4,12 +4,13 @@ import { useMongooseModel } from '~/server/utils/useMongooseModel'; // Adjust pa
 const User = useMongooseModel('User')
 export default defineEventHandler(async (event) => {
   try {
-    const diners = await User.find({ role: 'diner' }, '_id name').lean();
+    const diners = await User.find({ role: 'diner' }, '_id name avatar').lean();
 
     // Map _id to id for consistency if your frontend expects 'id'
     const formattedDiners = diners.map(diner => ({
       id: diner._id.toString(), // Convert ObjectId to string
-      name: diner.name
+      name: diner.name,
+      avatar: diner.avatar
     }));
 
     return formattedDiners;

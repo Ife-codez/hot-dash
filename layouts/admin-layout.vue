@@ -1,14 +1,11 @@
 <template>
-  <div class="min-h-screen bg-gray-100 flex flex-col">
+  <div class="min-h-screen bg-white flex flex-col">
     <header class="sticky top-0 z-20 bg-white shadow-sm px-4 py-3 flex justify-between items-center">
       <div class="flex items-center gap-4">
         <button @click="isDrawerOpen = true" class="bg-orange-500 w-8 h-8 rounded-md flex items-center justify-center">
           <Icon name="mdi:menu" class="text-white w-5 h-5" />
         </button>
         <h1 class="text-xl font-bold text-gray-800">Admin Dashboard</h1>
-      </div>
-      <div class="text-sm font-semibold text-gray-600">
-        Hi HotDash Admin
       </div>
     </header>
 

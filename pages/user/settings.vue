@@ -11,7 +11,7 @@
             type="text" 
             id="name" 
             v-model="detailsForm.name"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500" 
+            class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
           />
         </div>
         <div>
@@ -20,7 +20,7 @@
             type="email" 
             id="email" 
             v-model="detailsForm.email"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500" 
+            class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
           />
         </div>
         <div>
@@ -29,12 +29,12 @@
             type="text" 
             id="location" 
             v-model="detailsForm.location"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500" 
+            class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
           />
         </div>
         <button 
           type="submit" 
-          class="w-full bg-orange-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+          class="w-full bg-orange-500 text-white font-bold py-3 px-4 rounded-md hover:bg-orange-600 transition-colors duration-200"
           :disabled="isUpdatingDetails"
         >
           {{ isUpdatingDetails ? 'Saving...' : 'Save Changes' }}
@@ -51,7 +51,7 @@
             type="password" 
             id="currentPassword" 
             v-model="passwordForm.currentPassword"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500" 
+            class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
           />
         </div>
         <div>
@@ -60,12 +60,12 @@
             type="password" 
             id="newPassword" 
             v-model="passwordForm.newPassword"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500" 
+            class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
           />
         </div>
         <button 
           type="submit" 
-          class="w-full bg-orange-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+          class="w-full bg-orange-500 text-white font-bold py-3 px-4 rounded-md hover:bg-orange-600 transition-colors duration-200"
           :disabled="isUpdatingPassword"
         >
           {{ isUpdatingPassword ? 'Updating...' : 'Update Password' }}
@@ -76,6 +76,10 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: ['auth-check'],
+  layout: 'user-layout'
+});
 import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '~/stores/user';
 

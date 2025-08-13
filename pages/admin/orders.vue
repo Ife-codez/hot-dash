@@ -57,13 +57,12 @@
 </template>
 
 <script setup>
+definePageMeta({
+  middleware: ['auth-check'],
+  layout: 'admin-layout',
+});
 import { onMounted, computed } from 'vue';
 import { useOrderStore } from '~/stores/order';
-
-// definePageMeta({
-//   layout: 'admin-layout' // Assuming you have an admin layout
-// });
-
 const orderStore = useOrderStore();
 
 // Fetch orders from the server when the page loads

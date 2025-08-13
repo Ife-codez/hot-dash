@@ -1,0 +1,156 @@
+<template>
+  <div class="p-6">
+    <h1 class="text-3xl font-bold text-orange-500 mb-6">Admin Settings</h1>
+    
+    <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
+      <h2 class="text-xl font-semibold text-gray-800 mb-4">Account Information</h2>
+      
+      <form @submit.prevent="saveChanges">
+        
+        <div class="mb-4">
+          <label for="name" class="block text-gray-700 font-medium mb-1">Name</label>
+          <input
+            id="name"
+            type="text"
+            v-model="form.name"
+            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
+          />
+        </div>
+
+        <div class="mb-6">
+          <label for="email" class="block text-gray-700 font-medium mb-1">Email</label>
+          <input
+            id="email"
+            type="email"
+            v-model="form.email"
+            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
+          />
+        </div>
+        
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Change Password</h3>
+        
+        <div class="mb-4">
+          <label for="currentPassword" class="block text-gray-700 font-medium mb-1">Current Password <span class="text-red-500 text-sm">(Required for any changes)</span></label>
+          <input
+            id="currentPassword"
+            type="password"
+            v-model="form.currentPassword"
+            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="mb-6">
+          <label for="newPassword" class="block text-sm font-medium text-gray-600">New Password</label>
+          <input
+            id="newPassword"
+            type="password"
+            v-model="form.newPassword"
+            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
+            autocomplete="new-password"
+          />
+        </div>
+
+        <button
+          type="submit"
+          :disabled="loading"
+          class="w-full bg-orange-500 text-white font-bold py-3 px-4 rounded-md hover:bg-orange-600 transition-colors duration-200 disabled:bg-gray-400"
+        >
+          <span v-if="loading">Saving...</span>
+          <span v-else>Save Changes</span>
+        </button>
+        
+        <div v-if="successMessage" class="mt-4 text-green-600 text-center font-semibold">
+          {{ successMessage }}
+        </div>
+        <div v-if="errorMessage" class="mt-4 text-red-600 text-center font-semibold">
+          {{ errorMessage }}
+        </div>
+      </form>
+      
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useUserStore } from '~/stores/user';
+
+definePageMeta({
+  middleware: ['auth-check'],
+  layout: 'admin-layout',
+  ssr: false,
+});
+
+const userStore = useUserStore();
+const toast = useNuxtApp().$toast;
+
+const form = ref({
+  name: '',
+  email: '',
+  currentPassword: '',
+  newPassword: '',
+});
+
+const loading = ref(false);
+
+// Fetch the current admin details to pre-fill the form
+const fetchAdminDetails = async () => {
+  if (!userStore.user || !userStore.user._id) {
+    toast.error('User not authenticated.');
+    return;
+  }
+
+  try {
+    const response = await $fetch('/api/user/profile');
+    form.value.name = response.user.name;
+    form.value.email = response.user.email;
+  } catch (error) {
+    console.error('Failed to fetch admin details:', error);
+    toast.error('Failed to load user details.');
+  }
+};
+
+const saveChanges = async () => {
+  loading.value = true;
+  
+  if (!form.value.currentPassword) {
+    toast.error('Please enter your current password to save changes.');
+    loading.value = false;
+    return;
+  }
+
+  try {
+    const body = {
+      name: form.value.name,
+      email: form.value.email,
+      currentPassword: form.value.currentPassword,
+    };
+    
+    if (form.value.newPassword) {
+      body.newPassword = form.value.newPassword;
+    }
+    
+    await $fetch('/api/user/profile', {
+      method: 'PATCH',
+      body: body,
+    });
+    
+    toast.success('Your details have been updated successfully!');
+    
+    // Clear password fields for security
+    form.value.currentPassword = '';
+    form.value.newPassword = '';
+    
+  } catch (error) {
+    console.error('Error saving changes:', error);
+    toast.error(error.data?.statusMessage || 'Failed to save changes. Please check your current password.');
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchAdminDetails();
+});
+</script>

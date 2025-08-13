@@ -1,86 +1,111 @@
 <template>
-  <div class="min-h-screen bg-white text-black flex flex-col">
-    <div v-if="showUserList" class="flex-1 p-4 sm:p-6 lg:p-8">
-      <h1 class="text-2xl sm:text-3xl font-bold text-orange-500 mb-6">Diner Users</h1>
-      <ul class="space-y-2">
-        <li v-if="allUsers.length === 0" class="text-gray-600 italic">No diners found or still loading...</li>
-        <li
-          v-for="user in allUsers"
-          :key="user.id"
-          @click="selectUserToChat(user.id)"
-          :class="{
-            'cursor-pointer p-3 rounded-md transition-colors duration-200': true,
-            'bg-orange-100 text-orange-800 font-semibold': selectedUserId === user.id,
-            'bg-gray-50 hover:bg-gray-100': selectedUserId !== user.id
-          }"
-        >
-          {{ user.name }}
-        </li>
-      </ul>
-    </div>
+  <div class="flex h-full lg:h-[calc(100vh-12rem)] bg-white">
 
-    <div v-else-if="selectedUserId" class="flex-1 flex flex-col p-4 sm:p-6 lg:p-8">
-      <div class="flex items-center mb-4">
-        <button
-          @click="goBackToUserList"
-          class="bg-orange-500 text-white rounded-md px-4 py-2 text-sm sm:text-base hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
-        >
-          &larr; Back to Users
-        </button>
-        <h2 class="text-xl sm:text-2xl font-semibold text-orange-500 ml-4 truncate">
-          Chatting with: {{ allUsers.find(u => u.id === selectedUserId)?.name || 'Loading...' }}
-        </h2>
+    <div 
+      v-show="showUserList"
+      class="w-full lg:w-1/3 flex flex-col lg:border-r border-gray-200"
+    >
+      <div class="p-3 lg:border-b border-gray-200">
+        <h1 class="text-xl font-bold text-orange-500">Diner Users</h1>
       </div>
-
-      <div class="flex-1 overflow-y-auto border border-gray-300 rounded-md p-4 mb-4 bg-gray-50 flex flex-col space-y-3">
-        <div v-for="(msg, index) in messages" :key="msg._id || index" class="flex" :class="{'justify-end': msg.senderId === (currentUser && currentUser._id)}">
-          <div 
-            class="max-w-[70%] p-3 rounded-lg text-sm sm:text-base"
+      <div class="flex-1 overflow-y-auto p-3">
+        <ul class="space-y-2">
+          <li v-if="allUsers.length === 0" class="text-gray-600 italic p-3">No diners found or still loading...</li>
+          <li
+            v-for="user in allUsers"
+            :key="user.id"
+            @click="selectUserToChat(user.id)"
             :class="{
-              'bg-orange-500 text-white': msg.senderId === (currentUser && currentUser._id),
-              'bg-gray-200 text-gray-800': msg.senderId !== (currentUser && currentUser._id),
-              'rounded-bl-none': msg.senderId === (currentUser && currentUser._id),
-              'rounded-br-none': msg.senderId !== (currentUser && currentUser._id)
+              'cursor-pointer p-3 rounded-md transition-colors duration-200': true,
+              'bg-orange-100 text-orange-800 font-semibold': selectedUserId === user.id,
+              'bg-gray-50 hover:bg-gray-100': selectedUserId !== user.id
             }"
           >
-            <strong 
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden">
+                <img
+                  v-if="user.avatar"
+                  :src="user.avatar"
+                  :alt="`Profile picture of ${user.name}`"
+                  class="object-cover w-full h-full"
+                />
+                <div
+                  v-else
+                  class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500"
+                >
+                  <Icon name="mdi:account-circle" class="w-8 h-8" />
+                </div>
+              </div>
+              <span class="truncate">{{ user.name }}</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div
+      v-show="!showUserList"
+      class="w-full flex-1 flex flex-col"
+    >
+      <div v-if="selectedUserId">
+        <div class="flex items-center p-3 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <button
+            @click="goBackToUserList"
+            class="lg:hidden text-gray-600 hover:text-gray-800 mr-4"
+          >
+            <Icon name="mdi:arrow-left" class="w-6 h-6" />
+          </button>
+          <h2 class="text-lg font-semibold text-gray-800 truncate">
+            {{ allUsers.find(u => u.id === selectedUserId)?.name || 'Loading...' }}
+          </h2>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-3 space-y-3 h-full">
+          <div v-if="messages.length === 0" class="flex items-center justify-center h-full">
+            <p class="text-center text-gray-500 italic">Start a conversation!</p>
+          </div>
+          <div v-for="(msg, index) in messages" :key="msg._id || index" class="flex" :class="{'justify-end': msg.senderId === (currentUser && currentUser._id)}">
+            <div 
+              class="max-w-[70%] p-3 rounded-xl shadow-md text-sm"
               :class="{
-                'text-white': msg.senderId === (currentUser && currentUser._id),
-                'text-gray-800': msg.senderId !== (currentUser && currentUser._id)
+                'bg-orange-500 text-white rounded-br-none': msg.senderId === (currentUser && currentUser._id),
+                'bg-gray-200 text-gray-800 rounded-bl-none': msg.senderId !== (currentUser && currentUser._id)
               }"
             >
-              {{ msg.senderId === (currentUser && currentUser._id) ? 'You' : (allUsers.find(u => u.id === msg.senderId)?.name || msg.senderId) }}:
-            </strong>
-            {{ msg.message }}
-            <span class="block text-right text-xs mt-1" :class="{'text-orange-100': msg.senderId === (currentUser && currentUser._id), 'text-gray-600': msg.senderId !== (currentUser && currentUser._id)}">
-              {{ new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
-            </span>
+              {{ msg.message }}
+              <span class="block text-right text-xs mt-1" :class="{'text-orange-100': msg.senderId === (currentUser && currentUser._id), 'text-gray-600': msg.senderId !== (currentUser && currentUser._id)}">
+                {{ new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="flex items-center">
-        <input
-          type="text"
-          v-model="messageInput"
-          @keyup.enter="sendMessage"
-          placeholder="Type your message..."
-          :disabled="wsStatus !== 'OPEN'"
-          class="flex-1 p-3 border border-gray-300 rounded-md text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-        />
-        <button
-          @click="sendMessage"
-          :disabled="wsStatus !== 'OPEN' || !messageInput.trim()"
-          class="bg-orange-500 text-white rounded-md px-6 py-3 ml-3 text-sm sm:text-base hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
-        >
-          Send
-        </button>
+        <div class="p-3 border-t border-gray-200 bg-white sticky bottom-0">
+          <div class="flex items-center">
+            <input
+              type="text"
+              v-model="messageInput"
+              @keyup.enter="sendMessage"
+              placeholder="Type your message..."
+              :disabled="wsStatus !== 'OPEN'"
+              class="flex-1 p-3 border border-gray-300 rounded-full text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all duration-200"
+            />
+            <button
+              @click="sendMessage"
+              :disabled="wsStatus !== 'OPEN' || !messageInput.trim()"
+              class="bg-orange-500 text-white rounded-full p-3 ml-3 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors duration-200 disabled:bg-gray-400"
+            >
+              <Icon name="mdi:send" class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+      </div>
+       <div v-else class="flex items-center justify-center h-full p-3">
+        <p class="text-center text-gray-600 text-lg">Select a user to start chatting.</p>
       </div>
     </div>
-    
-    <div v-else class="flex-1 flex items-center justify-center p-4">
-      <p class="text-center text-gray-600 text-lg">Select a user from the list to start chatting.</p>
-    </div>
+
   </div>
 </template>
 
@@ -90,7 +115,9 @@ import { useWebSocket } from '@vueuse/core';
 import { useUserStore } from '~/stores/user';
 
 definePageMeta({
-  ssr: false
+  middleware: ['auth-check'],
+  layout: 'admin-layout',
+  ssr: false,
 });
 
 const userStore = useUserStore();
