@@ -31,24 +31,42 @@
         
         <div class="mb-4">
           <label for="currentPassword" class="block text-gray-700 font-medium mb-1">Current Password <span class="text-red-500 text-sm">(Required for any changes)</span></label>
-          <input
-            id="currentPassword"
-            type="password"
-            v-model="form.currentPassword"
-            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
-            autocomplete="current-password"
-          />
+          <div class="relative">
+            <input
+              :type="currentPasswordFieldType"
+              id="currentPassword"
+              v-model="form.currentPassword"
+              class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors pr-10"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              @click="toggleCurrentPasswordVisibility"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+            >
+              <Icon :name="currentPasswordFieldType === 'password' ? 'mdi:eye-off-outline' : 'mdi:eye-outline'" class="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div class="mb-6">
           <label for="newPassword" class="block text-sm font-medium text-gray-600">New Password</label>
-          <input
-            id="newPassword"
-            type="password"
-            v-model="form.newPassword"
-            class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors"
-            autocomplete="new-password"
-          />
+          <div class="relative">
+            <input
+              :type="newPasswordFieldType"
+              id="newPassword"
+              v-model="form.newPassword"
+              class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors pr-10"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              @click="toggleNewPasswordVisibility"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+            >
+              <Icon :name="newPasswordFieldType === 'password' ? 'mdi:eye-off-outline' : 'mdi:eye-outline'" class="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <button
@@ -67,7 +85,6 @@
           {{ errorMessage }}
         </div>
       </form>
-      
     </div>
   </div>
 </template>
@@ -94,7 +111,16 @@ const form = ref({
 
 const loading = ref(false);
 
-// Fetch the current admin details to pre-fill the form
+const currentPasswordFieldType = ref('password')
+const newPasswordFieldType = ref('password')
+
+const toggleCurrentPasswordVisibility = () => {
+  currentPasswordFieldType.value = currentPasswordFieldType.value === 'password' ? 'text' : 'password'
+}
+const toggleNewPasswordVisibility = () => {
+  newPasswordFieldType.value = newPasswordFieldType.value === 'password' ? 'text' : 'password'
+}
+
 const fetchAdminDetails = async () => {
   if (!userStore.user || !userStore.user._id) {
     toast.error('User not authenticated.');
@@ -138,7 +164,6 @@ const saveChanges = async () => {
     
     toast.success('Your details have been updated successfully!');
     
-    // Clear password fields for security
     form.value.currentPassword = '';
     form.value.newPassword = '';
     
@@ -154,3 +179,7 @@ onMounted(() => {
   fetchAdminDetails();
 });
 </script>
+
+<style scoped>
+/* Scoped styles can be added here if needed */
+</style>

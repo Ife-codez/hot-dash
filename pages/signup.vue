@@ -20,7 +20,23 @@
 
       <div class="flex flex-col space-y-1">
         <label for="password" class="text-white">Password:</label>
-        <input type="password" id="password" v-model="userData.password" placeholder="Create a password" required />
+        <div class="relative">
+          <input
+            :type="passwordFieldType"
+            id="password"
+            v-model="userData.password"
+            placeholder="Create a password"
+            required
+            class="pr-10"
+          />
+          <button
+            type="button"
+            @click="togglePasswordVisibility"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+          >
+            <Icon :name="passwordFieldType === 'password' ? 'mdi:eye-off-outline' : 'mdi:eye-outline'" class="w-5 h-5" />
+          </button>
+        </div>
       </div>
       <div>
         <button
@@ -52,6 +68,12 @@ const userData = ref({
   location: '',
   password: '',
 })
+
+const passwordFieldType = ref('password')
+
+const togglePasswordVisibility = () => {
+  passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password'
+}
 
 const handleSignup = async () => {
   try {

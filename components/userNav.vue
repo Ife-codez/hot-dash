@@ -6,7 +6,7 @@
     
     <div class="flex items-center space-x-1">
       <Icon name="mdi:map-marker" class="w-5 h-5 text-orange-500" />    
-      <span class="text-sm font-medium text-gray-700">Magura, BD</span>
+      <span class="text-sm font-medium text-gray-700">{{ userLocation }}</span>
     </div>
     
     <div v-if="isLoadingAvatar">
@@ -116,6 +116,9 @@ const user = computed(() => userStore.user);
 
 const userName = computed(() => user.value?.name || 'User');
 const avatar = computed(() => user.value?.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png');
+const userLocation = computed(() => user.value?.location || 'Set Location');
+
+
 
 const handleFileChange = async (event) => {
   const file = event.target.files[0];

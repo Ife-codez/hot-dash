@@ -8,6 +8,15 @@
       class="overflow-x-auto whitespace-nowrap no-scrollbar flex space-x-6"
     >
       <span
+        @click="selectCategory('all')"
+        class="cursor-pointer text-sm font-medium"
+        :class="{
+          'text-orange-500 font-semibold': activeCategory === 'all',
+        }"
+      >
+        All
+      </span>
+      <span
         v-for="cat in categoryStore.items"
         :key="cat._id"
         @click="selectCategory(cat._id)"
@@ -19,9 +28,10 @@
         {{ cat.name }}
       </span>
     </div>
-    <div v-if="filteredItems.length" class="mt-4 grid grid-cols-2 gap-4">
+    
+    <div v-if="displayedItems.length" class="mt-4 grid grid-cols-2 gap-4">
       <div
-        v-for="item in filteredItems"
+        v-for="item in displayedItems"
         :key="item._id"
         class="border rounded-lg p-2 shadow-sm relative flex flex-col justify-between"
       >
@@ -60,34 +70,67 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 import { useCategoryStore } from '@/stores/category'
 import { useMenuStore } from '@/stores/menu'
 import { useCartStore } from '@/stores/cart'
+import { useSearchStore } from '@/stores/search'
 
 const categoryStore = useCategoryStore()
 const menuStore = useMenuStore()
 const cartStore = useCartStore()
+const searchStore = useSearchStore() // Import the new store
 
 const loading = ref(true)
-const activeCategory = ref('')
+const activeCategory = ref('all')
 const filteredItems = ref([])
 
 onMounted(async () => {
   try {
     await categoryStore.fetchCategories()
     await menuStore.fetchMenu()
+    
+    selectCategory('all')
   } finally {
     loading.value = false
   }
 })
 
+// This computed property will filter based on the active category and the search query
+const displayedItems = computed(() => {
+  const query = searchStore.searchQuery.toLowerCase().trim();
+  if (!query) {
+    return filteredItems.value;
+  }
+  return filteredItems.value.filter(item =>
+    item.name.toLowerCase().includes(query)
+  );
+});
+
 function selectCategory(id) {
   activeCategory.value = id
   console.log('Selected category:', id)
+  searchStore.setSearchQuery(''); // Clear search when a new category is selected
 
-  filteredItems.value = menuStore.items.filter(
-    (item) => item.category && item.category._id === id
-  )
+  if (id === 'all') {
+    const allItems = []
+    const categoryCounts = {}
+    for (const item of menuStore.items) {
+      const categoryId = item.category._id
+      if (!categoryCounts[categoryId]) {
+        categoryCounts[categoryId] = 0
+      }
+      if (categoryCounts[categoryId] < 3) {
+        allItems.push(item)
+        categoryCounts[categoryId]++
+      }
+    }
+    filteredItems.value = allItems
+  } else {
+    filteredItems.value = menuStore.items.filter(
+      (item) => item.category && item.category._id === id
+    )
+  }
 }
 
 function addToCart(item) {
@@ -95,7 +138,6 @@ function addToCart(item) {
   console.log(`Added ${item.name} to cart. Total items: ${cartStore.totalItems}`);
 }
 </script>
-
 <style scoped>
 /* Hide scrollbar (Chrome, Safari, Opera) */
 .no-scrollbar::-webkit-scrollbar {

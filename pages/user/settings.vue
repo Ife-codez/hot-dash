@@ -47,21 +47,39 @@
       <form @submit.prevent="handlePasswordUpdate" class="space-y-4">
         <div>
           <label for="currentPassword" class="block text-sm font-medium text-gray-600">Current Password</label>
-          <input 
-            type="password" 
-            id="currentPassword" 
-            v-model="passwordForm.currentPassword"
-            class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
-          />
+          <div class="relative">
+            <input
+              :type="currentPasswordFieldType"
+              id="currentPassword"
+              v-model="passwordForm.currentPassword"
+              class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors pr-10" 
+            />
+            <button
+              type="button"
+              @click="toggleCurrentPasswordVisibility"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+            >
+              <Icon :name="currentPasswordFieldType === 'password' ? 'mdi:eye-off-outline' : 'mdi:eye-outline'" class="w-5 h-5" />
+            </button>
+          </div>
         </div>
         <div>
           <label for="newPassword" class="block text-sm font-medium text-gray-600">New Password</label>
-          <input 
-            type="password" 
-            id="newPassword" 
-            v-model="passwordForm.newPassword"
-            class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors" 
-          />
+          <div class="relative">
+            <input
+              :type="newPasswordFieldType"
+              id="newPassword"
+              v-model="passwordForm.newPassword"
+              class="mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors pr-10" 
+            />
+            <button
+              type="button"
+              @click="toggleNewPasswordVisibility"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+            >
+              <Icon :name="newPasswordFieldType === 'password' ? 'mdi:eye-off-outline' : 'mdi:eye-outline'" class="w-5 h-5" />
+            </button>
+          </div>
         </div>
         <button 
           type="submit" 
@@ -86,79 +104,78 @@ import { useUserStore } from '~/stores/user';
 const userStore = useUserStore();
 const toast = useNuxtApp().$toast;
 
-// Loading states
 const isUpdatingDetails = ref(false);
 const isUpdatingPassword = ref(false);
 
-// Form data refs, initialized with current user data
 const detailsForm = ref({
-  name: '',
-  email: '',
-  location: '',
+  name: '',
+  email: '',
+  location: '',
 });
 const passwordForm = ref({
-  currentPassword: '',
-  newPassword: '',
+  currentPassword: '',
+  newPassword: '',
 });
 
-// Computed properties for template
+const currentPasswordFieldType = ref('password')
+const newPasswordFieldType = ref('password')
+
+const toggleCurrentPasswordVisibility = () => {
+  currentPasswordFieldType.value = currentPasswordFieldType.value === 'password' ? 'text' : 'password'
+}
+const toggleNewPasswordVisibility = () => {
+  newPasswordFieldType.value = newPasswordFieldType.value === 'password' ? 'text' : 'password'
+}
+
 const user = computed(() => userStore.user);
 
-// Pre-populate forms with existing user data on page load
 onMounted(() => {
-  if (user.value) {
-    detailsForm.value.name = user.value.name;
-    detailsForm.value.email = user.value.email;
-    detailsForm.value.location = user.value.location;
-  }
+  if (user.value) {
+    detailsForm.value.name = user.value.name;
+    detailsForm.value.email = user.value.email;
+    detailsForm.value.location = user.value.location;
+  }
 });
 
-// --- Handlers for form submissions ---
-
-// Handle name, email, and location updates
 const handleGeneralDetailsUpdate = async () => {
-  try {
-    isUpdatingDetails.value = true;
-    const response = await $fetch('/api/user/update-profile', {
-      method: 'POST',
-      body: detailsForm.value,
-    });
-    userStore.setUser(response.user); // Update store with fresh data
-    toast.success('Details updated successfully!');
-  } catch (err) {
-    console.error('Error updating details:', err);
-    toast.error(err?.data?.message || 'Failed to update details.');
-  } finally {
-    isUpdatingDetails.value = false;
-  }
+  try {
+    isUpdatingDetails.value = true;
+    const response = await $fetch('/api/user/update-profile', {
+      method: 'POST',
+      body: detailsForm.value,
+    });
+    userStore.setUser(response.user);
+    toast.success('Details updated successfully!');
+  } catch (err) {
+    console.error('Error updating details:', err);
+    toast.error(err?.data?.message || 'Failed to update details.');
+  } finally {
+    isUpdatingDetails.value = false;
+  }
 };
 
-// Handle password update
 const handlePasswordUpdate = async () => {
-  // Basic validation
-  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword) {
-    toast.error('Both current and new passwords are required.');
-    return;
-  }
-  
-  try {
-    isUpdatingPassword.value = true;
-    await $fetch('/api/user/update-password', {
-      method: 'POST',
-      body: passwordForm.value,
-    });
-    toast.success('Password updated successfully!');
-    passwordForm.value.currentPassword = ''; // Clear form
-    passwordForm.value.newPassword = ''; // Clear form
-  } catch (err) {
-    console.error('Error updating password:', err);
-    toast.error(err?.data?.message || 'Failed to update password.');
-  } finally {
-    isUpdatingPassword.value = false;
-  }
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword) {
+    toast.error('Both current and new passwords are required.');
+    return;
+  }
+  
+  try {
+    isUpdatingPassword.value = true;
+    await $fetch('/api/user/update-password', {
+      method: 'POST',
+      body: passwordForm.value,
+    });
+    toast.success('Password updated successfully!');
+    passwordForm.value.currentPassword = '';
+    passwordForm.value.newPassword = '';
+  } catch (err) {
+    console.error('Error updating password:', err);
+    toast.error(err?.data?.message || 'Failed to update password.');
+  } finally {
+    isUpdatingPassword.value = false;
+  }
 };
-
-// Add a layout for the page
 </script>
 
 <style scoped>

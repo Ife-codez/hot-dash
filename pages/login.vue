@@ -10,7 +10,23 @@
 
       <div class="flex flex-col space-y-1">
         <label for="password" class="text-white">Password:</label>
-        <input type="password" id="password" v-model="loginData.password" placeholder="Enter password" required />
+        <div class="relative">
+          <input
+            :type="passwordFieldType"
+            id="password"
+            v-model="loginData.password"
+            placeholder="Enter password"
+            required
+            class="pr-10"
+          />
+          <button
+            type="button"
+            @click="togglePasswordVisibility"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+          >
+            <Icon :name="passwordFieldType === 'password' ? 'mdi:eye-off-outline' : 'mdi:eye-outline'" class="w-5 h-5" />
+          </button>
+        </div>
       </div>
       <div>
         <button
@@ -34,42 +50,45 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '~/stores/user'
 
-// toast from plugin
 const toast = useNuxtApp().$toast
-// const router = useRouter()
 const userStore = useUserStore()
 
-// login form model
 const loginData = ref({
   email: '',
   password: ''
 })
 
-// login handler
+const passwordFieldType = ref('password')
+
+const togglePasswordVisibility = () => {
+  passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password'
+}
+
 const handleLogin = async () => {
+  let redirectPath = '/';
+  
   try {
     const res = await $fetch('/api/auth/login', {
       method: 'POST',
       body: { ...loginData.value }
     });
 
-    // Set user data in the Pinia store if needed
     if (res.user) {
       userStore.setUser(res.user);
     }
-
+    
+    redirectPath = res.redirect || '/user/dashboard';
+    
     toast.success(res.message || 'Logged in successfully!');
 
-    // Force an SSR reload so HTTP-only cookie is sent to server immediately
-    await navigateTo(res.redirect || '/user/dashboard', { replace: true, external: true });
-    console.log('Auth middleware cookie:', getCookie(event, 'auth_token'));
   } catch (error) {
     toast.error(error?.data?.statusMessage || 'Login failed. Try again.');
+    return;
   }
+
+  await navigateTo(redirectPath, { replace: true, external: true });
 };
-
 </script>
-
 
 <style scoped>
 input {
