@@ -5,7 +5,11 @@
     <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
       <h2 class="text-xl font-semibold text-gray-800 mb-4">Account Information</h2>
       
-      <form @submit.prevent="saveChanges">
+      <div v-if="loadingAdminDetails" class="text-center py-10">
+        <Icon name="mdi:loading" class="w-10 h-10 text-orange-500 animate-spin" />
+      </div>
+
+      <form v-else @submit.prevent="saveChanges">
         
         <div class="mb-4">
           <label for="name" class="block text-gray-700 font-medium mb-1">Name</label>
@@ -96,11 +100,16 @@ import { useUserStore } from '~/stores/user';
 definePageMeta({
   middleware: ['auth-check'],
   layout: 'admin-layout',
-  ssr: false,
+  ssr: false, // ssr: false helps with components that rely on the DOM immediately
 });
 
 const userStore = useUserStore();
 const toast = useNuxtApp().$toast;
+
+// Define variables to hold success and error messages
+const successMessage = ref(null);
+const errorMessage = ref(null);
+const loadingAdminDetails = ref(true);
 
 const form = ref({
   name: '',
@@ -124,6 +133,7 @@ const toggleNewPasswordVisibility = () => {
 const fetchAdminDetails = async () => {
   if (!userStore.user || !userStore.user._id) {
     toast.error('User not authenticated.');
+    loadingAdminDetails.value = false;
     return;
   }
 
@@ -134,6 +144,8 @@ const fetchAdminDetails = async () => {
   } catch (error) {
     console.error('Failed to fetch admin details:', error);
     toast.error('Failed to load user details.');
+  } finally {
+    loadingAdminDetails.value = false;
   }
 };
 
@@ -143,6 +155,9 @@ const saveChanges = async () => {
   if (!form.value.currentPassword) {
     toast.error('Please enter your current password to save changes.');
     loading.value = false;
+    // Set the error message here
+    errorMessage.value = 'Please enter your current password to save changes.';
+    successMessage.value = null;
     return;
   }
 
@@ -166,10 +181,18 @@ const saveChanges = async () => {
     
     form.value.currentPassword = '';
     form.value.newPassword = '';
-    
+
+    // Set the success message here
+    successMessage.value = 'Your details have been updated successfully!';
+    errorMessage.value = null;
+
   } catch (error) {
     console.error('Error saving changes:', error);
-    toast.error(error.data?.statusMessage || 'Failed to save changes. Please check your current password.');
+    // Set the error message here
+    errorMessage.value = error.data?.statusMessage || 'Failed to save changes. Please check your current password.';
+    successMessage.value = null;
+
+    toast.error(errorMessage.value);
   } finally {
     loading.value = false;
   }

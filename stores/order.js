@@ -12,6 +12,8 @@ export const useOrderStore = defineStore('order', {
         body: orderData
       });
       this.orders.push(res);
+      // It's a good practice to return the new order data
+      return res;
     },
     async fetchOrders(userId = null) {
       const notificationsStore = useNotificationsStore();
@@ -30,6 +32,8 @@ export const useOrderStore = defineStore('order', {
           }
         });
       }
+      
+      return this.orders; // <--- This is the key addition
     }
   },
   persist: true,
