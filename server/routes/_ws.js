@@ -1,6 +1,5 @@
-// server/routes/_ws.js
 import { defineWebSocketHandler } from '#imports';
-import { useMongooseModel } from '~/server/utils/useMongooseModel'; // <--- UPDATED IMPORT
+import { useMongooseModel } from '~/server/utils/useMongooseModel';
 
 const connectedClients = new Map(); // Stores connected and authenticated clients
 
@@ -13,7 +12,7 @@ export default defineWebSocketHandler({
     console.log('[ws] message:', peer.id, message.text());
 
     // Get the Message model using your custom utility
-    const Message = useMongooseModel('Message'); // <--- GET THE MESSAGE MODEL HERE
+    const Message = useMongooseModel('Message'); // <--- GET THE MESSAGE MODEL 
 
     try {
       const parsed = JSON.parse(message.text());
@@ -42,13 +41,13 @@ export default defineWebSocketHandler({
           return;
         }
 
-        // --- PERSISTENCE LOGIC STARTS HERE ---
+        // PERSISTENCE LOGIC STARTS HERE
         try {
           const newMessage = new Message({ // Use the model obtained from useMongooseModel
             senderId,
             recipientId,
             message: chatText,
-            timestamp: new Date(), // Use current server time for consistency
+            timestamp: new Date(),
             senderRole: sender.role
           });
           

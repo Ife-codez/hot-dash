@@ -98,7 +98,6 @@ definePageMeta({
   middleware: ['auth-check'],
   layout: 'user-layout'
 });
-import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '~/stores/user';
 
 const userStore = useUserStore();
@@ -179,5 +178,5 @@ const handlePasswordUpdate = async () => {
 </script>
 
 <style scoped>
-/* Scoped styles can be added here if needed */
+
 </style>

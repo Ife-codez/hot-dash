@@ -1,15 +1,13 @@
-// server/api/messages.get.js
-import { defineEventHandler, getQuery } from 'h3'; // Import h3 utilities
-import { useMongooseModel } from '~/server/utils/useMongooseModel'; // Import your model utility
+import { defineEventHandler, getQuery } from 'h3'; 
+import { useMongooseModel } from '~/server/utils/useMongooseModel'; 
 
 export default defineEventHandler(async (event) => {
-  const Message = useMongooseModel('Message'); // Get the Message Mongoose model
+  const Message = useMongooseModel('Message'); 
 
   // Extract query parameters: user1Id and user2Id
   const query = getQuery(event);
   const { user1Id, user2Id } = query;
 
-  // Basic validation
   if (!user1Id || !user2Id) {
     throw createError({
       statusCode: 400,
@@ -27,7 +25,7 @@ export default defineEventHandler(async (event) => {
         { senderId: user1Id, recipientId: user2Id },
         { senderId: user2Id, recipientId: user1Id },
       ],
-    }).sort({ timestamp: 1 }); // Sort by timestamp in ascending order (oldest first)
+    }).sort({ timestamp: 1 }); 
 
     return messages; // Return the fetched messages
   } catch (error) {

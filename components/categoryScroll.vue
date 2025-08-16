@@ -70,7 +70,6 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
 import { useCategoryStore } from '@/stores/category'
 import { useMenuStore } from '@/stores/menu'
 import { useCartStore } from '@/stores/cart'
@@ -79,7 +78,7 @@ import { useSearchStore } from '@/stores/search'
 const categoryStore = useCategoryStore()
 const menuStore = useMenuStore()
 const cartStore = useCartStore()
-const searchStore = useSearchStore() // Import the new store
+const searchStore = useSearchStore()
 
 const loading = ref(true)
 const activeCategory = ref('all')
@@ -96,7 +95,6 @@ onMounted(async () => {
   }
 })
 
-// This computed property will filter based on the active category and the search query
 const displayedItems = computed(() => {
   const query = searchStore.searchQuery.toLowerCase().trim();
   if (!query) {
@@ -109,8 +107,7 @@ const displayedItems = computed(() => {
 
 function selectCategory(id) {
   activeCategory.value = id
-  console.log('Selected category:', id)
-  searchStore.setSearchQuery(''); // Clear search when a new category is selected
+  searchStore.setSearchQuery('');
 
   if (id === 'all') {
     const allItems = []
@@ -135,7 +132,6 @@ function selectCategory(id) {
 
 function addToCart(item) {
   cartStore.addToCart(item)
-  console.log(`Added ${item.name} to cart. Total items: ${cartStore.totalItems}`);
 }
 </script>
 <style scoped>

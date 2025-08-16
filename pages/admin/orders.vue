@@ -63,7 +63,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import { useOrderStore } from '~/stores/order';
 
 definePageMeta({
@@ -89,17 +88,16 @@ const markAsDelivered = async (orderId) => {
       method: 'PATCH',
       body: { status: 'delivered' }
     });
-    console.log('Order marked as delivered:', response);
     // Re-fetch orders to update the list
     await orderStore.fetchOrders();
-    alert('Order marked as delivered!');
+    toast.success('Order marked as delivered!');
   } catch (error) {
     console.error('Failed to mark order as delivered:', error);
-    alert('Failed to update order status. Please try again.');
+    toast.error('Failed to update order status. Please try again.');
   }
 };
 </script>
 
 <style scoped>
-/* Scoped styles can be added here if needed */
+
 </style>

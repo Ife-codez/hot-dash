@@ -1,4 +1,3 @@
-// middleware/auth.global.js (or any name, registered as a Nuxt route middleware)
 export default defineNuxtRouteMiddleware((to) => {
   if (process.server) {
     const user = useRequestEvent()?.context.user;

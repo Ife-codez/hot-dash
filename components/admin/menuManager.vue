@@ -87,7 +87,6 @@ const uploadImage = async () => {
 }
 
 const handleSubmit = async () => {
-  console.log(form.value)
   try {
     let imageUrl = form.value.imageUrl
 

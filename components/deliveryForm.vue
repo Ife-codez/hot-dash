@@ -32,7 +32,6 @@
 </template>
 
 <script setup>
-// Define the props and emits for v-model
 defineProps({
   modelValue: {
     type: Object,
@@ -44,5 +43,5 @@ defineEmits(['update:modelValue']);
 </script>
 
 <style scoped>
-/* No specific styles needed as Tailwind handles everything */
+
 </style>

@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     notifications: [],
-    notifiedOrderIds: [], // NEW: Keep a list of order IDs we've already notified about
+    notifiedOrderIds: [], 
   }),
   getters: {
     unreadCount(state) {
@@ -11,14 +11,14 @@ export const useNotificationsStore = defineStore('notifications', {
     }
   },
   actions: {
-    addNotification(message, orderId, type = 'info') { // UPDATED: Accept an orderId
+    addNotification(message, orderId, type = 'info') { 
       if (this.notifiedOrderIds.includes(orderId)) {
-        return; // Don't add if we've already notified for this order
+        return;
       }
       
       const newNotification = {
         id: Date.now(),
-        orderId, // NEW: Store the order ID
+        orderId, 
         message,
         type,
         read: false,

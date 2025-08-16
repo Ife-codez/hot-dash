@@ -94,7 +94,6 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
 import { useUserStore } from '~/stores/user';
 
 definePageMeta({
@@ -204,5 +203,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Scoped styles can be added here if needed */
+
 </style>

@@ -57,11 +57,9 @@
 
 <script setup>
 const toast = useNuxtApp().$toast
-import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-
 const userData = ref({
   name: '',
   email: '',
@@ -70,11 +68,9 @@ const userData = ref({
 })
 
 const passwordFieldType = ref('password')
-
 const togglePasswordVisibility = () => {
   passwordFieldType.value = passwordFieldType.value === 'password' ? 'text' : 'password'
 }
-
 const handleSignup = async () => {
   try {
     const res = await $fetch('/api/auth/signup', {

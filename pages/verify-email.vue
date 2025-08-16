@@ -8,7 +8,7 @@
         Verifying your email...
       </p>
       <p v-if="status === 'success'" class="text-green-600 dark:text-green-400">
-        ✅ Email verified! Redirecting to login...
+         Email verified! Redirecting to login...
       </p>
       <p v-if="status === 'error'" class="text-red-600 dark:text-red-400">
         ❌ Verification failed. Link may be invalid or expired.
@@ -19,7 +19,6 @@
 
 <script setup>
 import { useRoute, navigateTo } from '#imports'
-import { ref, onMounted } from 'vue'
 
 const route = useRoute()
 const status = ref('verifying')

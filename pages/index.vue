@@ -11,7 +11,7 @@
 
       <div class="text-center space-y-2">
         <h1 class="text-2xl font-bold">Fast Delivery At Your Doorstep</h1>
-        <p class="text-lg md:text-xl">Home delivery and online reservation system for restaurants & cafes</p>
+        <p class="text-lg md:text-xl">Crafting memorable meals using love and the freshest ingredients</p>
       </div>
     </div>
 

@@ -11,7 +11,6 @@ cloudinary.config({
 });
 
 export default defineEventHandler(async (event) => {
-  // CRITICAL FIX: Get the user from the authentication token
   const user = event.context.user;
   if (!user) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });

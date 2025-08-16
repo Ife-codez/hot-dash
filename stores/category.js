@@ -9,7 +9,7 @@ export const useCategoryStore = defineStore('category', {
       const res = await $fetch('/api/category')
       this.items = res
       
-      return this.items; // <--- This is the key addition
+      return this.items; 
     }
   }
 })

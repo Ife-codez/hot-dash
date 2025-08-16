@@ -123,5 +123,5 @@ const deliveredOrders = computed(() => {
 </script>
 
 <style scoped>
-/* No specific styles needed as Tailwind handles everything */
+
 </style>

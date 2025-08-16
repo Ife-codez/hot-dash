@@ -1,7 +1,6 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
-  // css: ['@/assets/css/tailwind.css'],
   modules: ['nuxt-mongoose', '@pinia/nuxt', '@nuxt/icon', '@nuxtjs/tailwindcss'],
   
 
@@ -25,12 +24,8 @@ export default defineNuxtConfig({
     authSecret: process.env.AUTH_SECRET,
   },
 
-  // This is the new, un-commented plugins section
   plugins: [
     '~/plugins/pinia-persisted-state.client.js',
   ],
 
-  // tailwindcss:{
-  //   configPath: "~/tailwind.config.ts",
-  // }
 })

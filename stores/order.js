@@ -12,7 +12,6 @@ export const useOrderStore = defineStore('order', {
         body: orderData
       });
       this.orders.push(res);
-      // It's a good practice to return the new order data
       return res;
     },
     async fetchOrders(userId = null) {
@@ -23,7 +22,6 @@ export const useOrderStore = defineStore('order', {
       
       this.orders = res;
 
-      // NEW: Check for delivered orders and create a notification if we haven't already
       if (userId) {
         this.orders.forEach(order => {
           if (order.status === 'delivered') {
@@ -33,7 +31,7 @@ export const useOrderStore = defineStore('order', {
         });
       }
       
-      return this.orders; // <--- This is the key addition
+      return this.orders; 
     }
   },
   persist: true,

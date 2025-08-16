@@ -56,5 +56,5 @@ const notificationsStore = useNotificationsStore();
 </script>
 
 <style scoped>
-/* No specific styles needed */
+
 </style>

@@ -10,7 +10,6 @@ export default defineNuxtPlugin({
     // Watch for the user to be available and fetch the orders once
     watch(() => userStore.user?._id, async (newUserId) => {
       if (newUserId) {
-        console.log('User ID found. Fetching orders globally...');
         await orderStore.fetchOrders(newUserId);
       }
     }, { immediate: true });

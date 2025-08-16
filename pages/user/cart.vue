@@ -69,22 +69,21 @@ import { useOrderStore } from '~/stores/order'
 import cartItemList from '~/components/cartItemList.vue'
 import deliveryForm from '~/components/deliveryForm.vue'
 
-const userStore = useUserStore(); // Corrected name to avoid conflict
+const userStore = useUserStore();
 const cartStore = useCartStore();
 const orderStore = useOrderStore();
+const toast = useNuxtApp().$toast
 
 // Fixed prices for fees
 const packageFee = ref(200);
 const charges = ref(50);
 const deliveryFee = ref(500);
 
-// NEW: This ref will now be reactive and connected to the form
 const deliveryDetails = ref({
   address: '',
   phone: '',
 });
 
-// Computed property for the final total
 const finalTotal = computed(() => {
   return cartStore.totalAmount + packageFee.value + charges.value + deliveryFee.value;
 });
@@ -95,13 +94,10 @@ const handlePlaceOrder = async () => {
     return;
   }
   
-  // You now get the userId directly from the store
-  // Assuming your user store has a 'user' object with an '_id' property
+  
   const userId = userStore.user?._id; 
   if (!userId) {
     alert('You must be logged in to place an order.');
-    // Optional: Redirect to login page
-    // useRouter().push('/login');
     return;
   }
   
@@ -127,13 +123,12 @@ const handlePlaceOrder = async () => {
     await orderStore.placeOrder(orderData);
     
     cartStore.clearCart();
-    alert('Your order has been placed successfully!');
-    // Optional: Reset form fields
+    toast.success('Your order has been placed successfully!');
+    // Reset form fields
     deliveryDetails.value = { address: '', phone: '' };
     
   } catch (error) {
-    console.error('Failed to place order:', error);
-    alert('Failed to place order. Please try again.');
+    toast.error('Failed to place order. Please try again.');
   }
 };
 </script>

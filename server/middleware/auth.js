@@ -1,4 +1,3 @@
-// server/middleware/auth.js
 import jwt from 'jsonwebtoken';
 
 export default defineEventHandler((event) => {

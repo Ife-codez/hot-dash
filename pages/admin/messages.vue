@@ -110,7 +110,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { nextTick } from 'vue';
 import { useWebSocket } from '@vueuse/core';
 import { useUserStore } from '~/stores/user';
 
@@ -127,7 +127,7 @@ const wsUrl = ref('');
 
 const wsStatus = ref('CLOSED');
 const wsSend = ref(null);
-const wsData = ref(null); // Keep if you use wsData, otherwise can remove
+const wsData = ref(null);
 
 let wsInstance = null;
 
@@ -155,7 +155,6 @@ const fetchUserChatHistory = async (userId) => {
     return;
   }
 
-  // If history is already in cache, no need to refetch
   if (chatHistories.value.has(userId) && chatHistories.value.get(userId).length > 0) {
       return;
   }
@@ -202,7 +201,6 @@ const goBackToUserList = () => {
 };
 
 const initializeWebSocket = () => {
-  // Prevent re-initialization
   if (wsInstance) return;
 
   const { status, data, send, open, close } = useWebSocket(wsUrl.value, {
@@ -310,8 +308,6 @@ onUnmounted(() => {
 watch(() => userStore.user, (newUserDetails) => {
   currentUser.value = newUserDetails;
   authenticateWebSocket();
-  // If a user is already selected when the admin user details load,
-  // try to fetch their history
   if (newUserDetails && newUserDetails._id && selectedUserId.value) {
       fetchUserChatHistory(selectedUserId.value);
   }
@@ -319,5 +315,5 @@ watch(() => userStore.user, (newUserDetails) => {
 </script>
 
 <style scoped>
-/* You can add any custom CSS here that cannot be achieved with Tailwind */
+
 </style>

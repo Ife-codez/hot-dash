@@ -29,10 +29,8 @@ definePageMeta({
 import addCategories from '@/components/admin/addCategories.vue';
 import menuManager from '@/components/admin/menuManager.vue';
 
-// The scrollToSection and toggleHeader are no longer needed
-// as the new layout handles the drawer navigation
 </script>
 
 <style scoped>
-/* No scoped styles needed here, as the new layout handles the overall structure */
+
 </style>

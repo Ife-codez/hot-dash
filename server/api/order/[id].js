@@ -31,7 +31,6 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // You can also add a GET handler here to fetch a single order by ID
   if (method === 'GET') {
       try {
           const order = await Order.findById(orderId)

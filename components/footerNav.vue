@@ -21,7 +21,7 @@
         <span class="text-xs">Chat</span>
       </button>
 
-      <!-- Cart (already orange) -->
+      <!-- Cart -->
       <button 
         @click="navigateTo('/user/cart')" 
         class="relative -mt-6 p-3 bg-orange-500 rounded-full text-white shadow-lg"
@@ -68,6 +68,5 @@ const route = useRoute()
 const navigateTo = router.push
 const cartStore = useCartStore()
 
-// Helper to check if route is active
 const isActive = (path) => route.path === path
 </script>

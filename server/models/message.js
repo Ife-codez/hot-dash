@@ -25,9 +25,6 @@ export default defineMongooseModel('Message', {
     enum: ['diner', 'admin'], // Ensure roles are consistent
     required: true 
   }
-  // You might want to add other fields like:
-  // senderRole: { type: String, enum: ['diner', 'admin'], required: true },
-  // read: { type: Boolean, default: false } // For read receipts
 }, {
   timestamps: false
 })

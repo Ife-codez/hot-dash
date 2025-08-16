@@ -55,7 +55,7 @@ definePageMeta({
   middleware: ['auth-check'],
   layout: 'user-layout'
 });
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { nextTick } from 'vue';
 import { useWebSocket } from '@vueuse/core';
 import { useUserStore } from '~/stores/user';
 
@@ -207,6 +207,5 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* No specific styles needed here, as Tailwind handles most of it
-   and the layout should manage overall page height. */
+
 </style>
