@@ -54,7 +54,7 @@
           <p class="text-sm font-bold text-orange-600">₦{{ item.price }}</p>
           
           <button
-            class="w-8 h-8 rounded-tr-lg rounded-bl-lg bg-orange-500 text-white flex items-center justify-center"
+            class="w-8 h-8 rounded-tr-lg rounded-bl-lg bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center"
             @click="addToCart(item)"
           >
             +

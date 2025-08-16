@@ -1,6 +1,6 @@
 <template>
   <div class="p-6">
-    <h1 class="text-3xl font-bold text-orange-500 mb-6">Admin Settings</h1>
+    <h1 class="text-2xl font-bold text-orange-500 mb-6">Admin Settings</h1>
     
     <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
       <h2 class="text-xl font-semibold text-gray-800 mb-4">Account Information</h2>
