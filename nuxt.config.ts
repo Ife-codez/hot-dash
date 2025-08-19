@@ -10,7 +10,13 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       websocket: true // Enable experimental WebSocket support in Nitro
-    }
+    },
+    preset: 'node-server',
+    dev: false
+  },
+  devServer: {
+    host: '0.0.0.0',
+    port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
   },
   runtimeConfig: {
     smtpUser: process.env.SMTP_USER,
