@@ -98,6 +98,7 @@
 import { computed } from 'vue';
 import { useOrderStore } from '~/stores/order';
 import { useUserStore } from '~/stores/user';
+import { useAsyncData } from '#app';
 
 definePageMeta({
   middleware: ['auth-check'],
@@ -107,10 +108,20 @@ definePageMeta({
 const orderStore = useOrderStore();
 const userStore = useUserStore();
 
-// Use useAsyncData to fetch data before rendering
+// Use useAsyncData to fetch data based on the user's ID
 const { pending } = useAsyncData(
   'user-orders',
-  () => orderStore.fetchOrders()
+  async () => {
+    const userId = userStore.user?._id;
+    if (userId) {
+      // Pass the user ID to the store action
+      await orderStore.fetchOrders(userId);
+    }
+  },
+  {
+    // Re-run this function whenever the user's ID changes
+    watch: [() => userStore.user?._id],
+  }
 );
 
 const pendingOrders = computed(() => {
