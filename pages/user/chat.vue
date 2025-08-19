@@ -89,9 +89,12 @@ const fetchChatHistory = async () => {
   if (!currentUser.value || !currentUser.value._id) {
     return;
   }
+  // Use runtimeConfig to get the base URL
+  const runtimeConfig = useRuntimeConfig();
+  const baseUrl = runtimeConfig.public.appUrl;
 
   try {
-    const response = await fetch(`/api/messages?user1Id=${currentUser.value._id}&user2Id=${ADMIN_USER_ID}`);
+    const response = await fetch(`${baseUrl}/api/messages?user1Id=${currentUser.value._id}&user2Id=${ADMIN_USER_ID}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -187,7 +190,7 @@ const sendMessage = async () => {
 };
 
 onMounted(() => {
-  wsUrl.value = `ws://${window.location.host}/_ws`;
+  wsUrl.value = window.location.protocol.replace('http', 'ws') + '//' + window.location.host + '/_ws';
   initializeWebSocket();
 });
 
