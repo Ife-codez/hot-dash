@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
       if (query.userId) {
         filter.userId = query.userId;
       }
-      const orders = await Order.find()
+      const orders = await Order.find(filter)
         .populate({
           path: 'userId',
           select: 'name email'
